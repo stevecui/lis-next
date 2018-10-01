@@ -58,8 +58,8 @@ void netvsc_switch_datapath(struct net_device *ndev, bool vf)
 			       sizeof(struct nvsp_message),
 			       (unsigned long)init_pkt,
 			       VM_PKT_DATA_INBAND, 0);
-
-	net_device_ctx->datapath = vf;
+    //Here, need to decide whether comment out the line, steve_cui
+	//net_device_ctx->datapath = vf;
 }
 
 static struct netvsc_device *alloc_net_device(void)
@@ -1160,7 +1160,7 @@ static void netvsc_send_table(struct net_device *ndev,
 		      nvmsg->msg.v5_msg.send_table.offset);
 
 	for (i = 0; i < count; i++)
-		net_device_ctx->tx_send_table[i] = tab[i];
+		net_device_ctx->tx_table[i] = tab[i];
 }
 
 static void netvsc_send_vf(struct net_device *ndev,
