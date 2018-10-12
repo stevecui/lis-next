@@ -1608,7 +1608,8 @@ static int netdev_master_upper_dev_link(struct net_device *vf_netdev,
                                       struct net_device *ndev)
 {
         int err;
-
+        printk("nd:%lx\n",(uintptr_t)ndev);
+        printk("vf:%lx\n",(uintptr_t)vf_netdev);
         err = netdev_set_master(ndev, vf_netdev);
 
         return err;
@@ -1634,7 +1635,8 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 		 = this_cpu_ptr(ndev_ctx->vf_stats);
 
 	skb->dev = ndev;
-
+#error 1111111111111111111111111111111111
+    printk("nd_vf_hd:%lx\n",(uintptr_t)ndev);
 	u64_stats_update_begin(&pcpu_stats->syncp);
 	pcpu_stats->rx_packets++;
 	pcpu_stats->rx_bytes += skb->len;
@@ -1642,13 +1644,15 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 
 	return RX_HANDLER_ANOTHER;
 }
-
+//struct slave  struct bond
 static int netvsc_vf_join(struct net_device *vf_netdev,
 			  struct net_device *ndev)
 {
 	struct net_device_context *ndev_ctx = netdev_priv(ndev);
 	int ret;
 
+	rcu_assign_pointer(netdev_extended(ndev)->rx_handler_data, vf_netdev);
+	
 	ret = netdev_rx_handler_register(vf_netdev,
 					 netvsc_vf_handle_frame, ndev);
 	if (ret != 0) {
