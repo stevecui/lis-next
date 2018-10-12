@@ -42,6 +42,7 @@
 #include <net/checksum.h>
 #include <net/ip6_checksum.h>
 #include <net/flow_keys.h>
+#include <net/bonding.h>
 
 #include <linux/rtnetlink.h>
 #include <linux/netpoll.h>
@@ -1635,7 +1636,6 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 		 = this_cpu_ptr(ndev_ctx->vf_stats);
 
 	skb->dev = ndev;
-#error 1111111111111111111111111111111111
     printk("nd_vf_hd:%lx\n",(uintptr_t)ndev);
 	u64_stats_update_begin(&pcpu_stats->syncp);
 	pcpu_stats->rx_packets++;
@@ -1649,9 +1649,11 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 			  struct net_device *ndev)
 {
 	struct net_device_context *ndev_ctx = netdev_priv(ndev);
+	struct bonding *bond_dev = netdev_priv(ndev) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
+
 	int ret;
 
-	rcu_assign_pointer(netdev_extended(ndev)->rx_handler_data, vf_netdev);
+	rcu_assign_pointer(netdev_extended(ndev)->rx_handler_data, bond_dev);
 	
 	ret = netdev_rx_handler_register(vf_netdev,
 					 netvsc_vf_handle_frame, ndev);
@@ -1860,9 +1862,12 @@ static int netvsc_probe(struct hv_device *dev,
 	struct net_device_context *net_device_ctx;
 	struct netvsc_device_info device_info;
 	struct netvsc_device *nvdev;
+	struct bonding *bond_dev;
+	unsigned int size_all;
 	int ret = -ENOMEM;
 
-	net = alloc_etherdev_mq(sizeof(struct net_device_context),
+    size_all = ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN)+ ALIGN(sizeof(struct bonding), NETDEV_ALIGN);
+	net = alloc_etherdev_mq(size_all,
 				VRSS_CHANNEL_MAX);
 	if (!net)
 		goto no_net;
@@ -1874,6 +1879,8 @@ static int netvsc_probe(struct hv_device *dev,
 	net_device_ctx = netdev_priv(net);
 	net_device_ctx->device_ctx = dev;
 	net_device_ctx->msg_enable = netif_msg_init(debug, default_msg);
+	bond_dev = netdev_priv(net) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
+	bond_dev->dev = net;
 	if (netif_msg_probe(net_device_ctx))
 		netdev_dbg(net, "netvsc msg_enable: %d\n",
 			net_device_ctx->msg_enable);
