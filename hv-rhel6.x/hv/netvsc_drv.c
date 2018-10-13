@@ -2588,7 +2588,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	struct bonding *bond_dev = netdev_priv(ndev) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
 
 	int ret;
-
+#if 0
 	ret = bond_enslave(ndev, vf_netdev);
 	if(ret != 0){
 		netdev_err(vf_netdev,
@@ -2596,7 +2596,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 			   ret);
 		goto rx_handler_failed;
 	}	
-
+#endif
 	rcu_assign_pointer(netdev_extended(ndev)->rx_handler_data, vf_netdev);
 	
 	ret = netdev_rx_handler_register(vf_netdev,
