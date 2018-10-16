@@ -1617,6 +1617,7 @@ static int netdev_master_upper_dev_link(struct net_device *vf_netdev,
         printk("nd:%lx\n",(uintptr_t)ndev);
         printk("vf:%lx\n",(uintptr_t)vf_netdev);
         //err = netdev_set_master(ndev, vf_netdev);
+        //vf_netdev->master = NULL;
         err = netdev_set_master(vf_netdev,ndev);
 
         return err;
@@ -3076,6 +3077,7 @@ err_undo_flags:
 		eth_hw_addr_random(bond_dev);
 	printk("bd_21\n");
 my_define:
+	printk("bd_22:res:%d\n",res);
 	return res;
 }
 
@@ -3097,9 +3099,11 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 			   ret);
 		goto rx_handler_failed;
 	}	
-
-	rcu_assign_pointer(netdev_extended(ndev)->rx_handler_data, vf_netdev);
 	
+	rcu_assign_pointer(netdev_extended(ndev)->rx_handler_data, vf_netdev);
+	rcu_assign_pointer(netdev_extended(vf_netdev)->rx_handler, NULL);
+
+#if 1	
 	ret = netdev_rx_handler_register(vf_netdev,
 					 netvsc_vf_handle_frame, ndev);
 	if (ret != 0) {
@@ -3108,7 +3112,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 			   ret);
 		goto rx_handler_failed;
 	}
-	
+
 
 	//ret = netdev_upper_dev_link(vf_netdev, ndev,
 	//				   NULL, NULL, NULL);
@@ -3120,6 +3124,8 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 			   ndev->name, ret);
 		goto upper_link_failed;
 	}
+
+#endif		
 
 	/* set slave flag before open to prevent IPv6 addrconf */
 	vf_netdev->flags |= IFF_SLAVE;

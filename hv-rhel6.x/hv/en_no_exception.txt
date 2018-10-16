@@ -1,0 +1,231 @@
+
+CentOS release 6.10 (Final)
+Kernel 2.6.32 on an x86_64
+
+localhost.localdomain login:
+CentOS release 6.10 (Final)
+Kernel 2.6.32 on an x86_64
+
+localhost.localdomain login:
+CentOS release 6.10 (Final)
+Kernel 2.6.32 on an x86_64
+
+localhost.localdomain login: destroy_irq ffffffff8103cc10
+cmm ffffffff8103d720
+smi ffffffff8103daf0
+aff ffffffff8103dd70
+itd ffffffff810f80c0
+pcrb ffffffff812c38e0
+tmi ffffffff812dd9c0
+msi_ir_chip: ffffffff81aa9660
+msi_chip: ffffffff81aa9700
+hv_vmbus: registering driver hv_pci
+hv_pci 769cd631-80ad-4984-a4c1-8b62651f78db: PCI host bridge to bus a4c1:00
+pci_bus a4c1:00: root bus resource [mem 0xfe0000000-0xfe07fffff window]
+pci a4c1:00:02.0: reg 18: [mem 0xfe0000000-0xfe07fffff 64bit pref]
+pci a4c1:00:02.0: BAR 2: assigned [mem 0xfe0000000-0xfe07fffff 64bit pref]
+mlx4_core: Mellanox ConnectX core driver v4.4-2.0.7
+mlx4_core: Initializing a4c1:00:02.0
+mlx4_core a4c1:00:02.0: setting latency timer to 64
+mlx4_core a4c1:00:02.0: Detected virtual function - running in slave mode
+mlx4_core a4c1:00:02.0: Sending reset
+mlx4_core a4c1:00:02.0: Sending vhcr0
+mlx4_core a4c1:00:02.0: HCA minimum page size:512
+mlx4_core a4c1:00:02.0: Timestamping is not supported in slave mode
+mlx4_core: device is working in RoCE mode: Unknown
+mlx4_core: gid_type 0 for UD QPs is not supported by the device, gid_type 3 was chosen instead
+mlx4_core: UD QP Gid type is: Unknown
+  alloc irq_desc for 24 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 24 for MSI/MSI-X
+  alloc irq_desc for 25 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 25 for MSI/MSI-X
+  alloc irq_desc for 26 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 26 for MSI/MSI-X
+  alloc irq_desc for 27 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 27 for MSI/MSI-X
+  alloc irq_desc for 28 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 28 for MSI/MSI-X
+  alloc irq_desc for 29 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 29 for MSI/MSI-X
+  alloc irq_desc for 30 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 30 for MSI/MSI-X
+  alloc irq_desc for 31 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 31 for MSI/MSI-X
+  alloc irq_desc for 32 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 32 for MSI/MSI-X
+  alloc irq_desc for 33 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 33 for MSI/MSI-X
+  alloc irq_desc for 34 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 34 for MSI/MSI-X
+  alloc irq_desc for 35 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 35 for MSI/MSI-X
+  alloc irq_desc for 36 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 36 for MSI/MSI-X
+  alloc irq_desc for 37 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 37 for MSI/MSI-X
+  alloc irq_desc for 38 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 38 for MSI/MSI-X
+  alloc irq_desc for 39 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 39 for MSI/MSI-X
+  alloc irq_desc for 40 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 40 for MSI/MSI-X
+  alloc irq_desc for 41 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 41 for MSI/MSI-X
+  alloc irq_desc for 42 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 42 for MSI/MSI-X
+  alloc irq_desc for 43 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 43 for MSI/MSI-X
+  alloc irq_desc for 44 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 44 for MSI/MSI-X
+  alloc irq_desc for 45 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 45 for MSI/MSI-X
+  alloc irq_desc for 46 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 46 for MSI/MSI-X
+  alloc irq_desc for 47 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 47 for MSI/MSI-X
+  alloc irq_desc for 48 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 48 for MSI/MSI-X
+  alloc irq_desc for 49 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 49 for MSI/MSI-X
+  alloc irq_desc for 50 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 50 for MSI/MSI-X
+  alloc irq_desc for 51 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 51 for MSI/MSI-X
+  alloc irq_desc for 52 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 52 for MSI/MSI-X
+  alloc irq_desc for 53 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 53 for MSI/MSI-X
+  alloc irq_desc for 54 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 54 for MSI/MSI-X
+  alloc irq_desc for 55 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 55 for MSI/MSI-X
+  alloc irq_desc for 56 on node -1
+  alloc kstat_irqs on node -1
+mlx4_core a4c1:00:02.0: irq 56 for MSI/MSI-X
+<mlx4_ib> mlx4_ib_add: mlx4_ib: Mellanox ConnectX InfiniBand driver v4.4-2.0.7
+<mlx4_ib> mlx4_ib_add: counter index 5 for port 1 allocated 1
+ib_query_pkey failed (-1) for mlx4_0 (index 0)
+mlx4_core a4c1:00:02.0: mlx4_ib: multi-function enabled
+mlx4_core a4c1:00:02.0: mlx4_ib: operating in qp1 tunnel mode
+mlx4_en: Mellanox ConnectX HCA Ethernet driver v4.4-2.0.7
+mlx4_en a4c1:00:02.0: Activating port:1
+mlx4_en: a4c1:00:02.0: Port 1: Using 32 TX rings
+mlx4_en: a4c1:00:02.0: Port 1: Using 16 RX rings
+mlx4_en: a4c1:00:02.0: Port 1: Initializing port
+vf_netdev:ffff880264e60020, ndev:ffff88027ed78020
+bd_0
+bd_1
+bd_2
+bd_3
+bd_4
+bd_5
+bd_6
+bd_7
+bd_8
+bd_9
+bd_a
+bd_b
+r_0
+r_1:nd:ffff880264e60020
+r_6
+bd_c
+r_0
+r_1:nd:ffff880264e60020
+r_6
+mlx4_en: a4c1:00:02.0: Port 1: Steering Mode 2
+r_0
+r_1:nd:ffff880264e60020
+mlx4_en: a4c1:00:02.0: Port 1: Link Up
+r_6
+8021q: adding VLAN 0 to HW filter on device eth0
+bd_d
+bd_e
+bd_f
+bd_10
+bd_11
+bd_12
+bd_13
+r_0
+r_1:nd:ffff880264e60020
+r_5
+bd_13_0
+bd_13_4
+bd_14
+bd_15:bd_dev:ffff88027ed78020
+bd_15_0:slave_dev:ffff880264e60020
+bd_15_1:&new_slave->list:ffff88027b537008, &bond->slave_list:ffff88027ed78868,(&bond->slave_list)->prev:0
+r_0
+r_1:nd:ffff880264e60020
+r_2
+r_2_0
+r_2_1:sl:ffff88027b537000
+r_2_2
+r_2_3:bd:ffff88027ed78860
+2_3_0:slave->dev:ffff880264e60020
+2_3_1
+2_3_1_0
+2_3_1_1
+2_3_2
+2_3_3
+2_3_4
+2_3_5
+2_3_6
+r_2_4
+r_6
+bd_15_2:new_slave:ffff88027b537000
+bd_15_3
+bd_22:res:0
+nd:ffff88027ed78020
+vf:ffff880264e60020
+mlx4_core a4c1:00:02.0: eth0: can not set master device eth3 (err = -16)
+r_0
+r_1:nd:ffff880264e60020
+r_5
+r_0
+r_1:nd:ffff880264e60020
+r_5
+
+CentOS release 6.10 (Final)
+Kernel 2.6.32 on an x86_64
+
+localhost.localdomain login:
+CentOS release 6.10 (Final)
+Kernel 2.6.32 on an x86_64
+
+localhost.localdomain login:
+CentOS release 6.10 (Final)
+Kernel 2.6.32 on an x86_64
+
+localhost.localdomain login:
