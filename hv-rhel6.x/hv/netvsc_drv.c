@@ -789,7 +789,7 @@ int netvsc_recv_callback(struct net_device *net,
 	struct sk_buff *vf_skb;
 	struct netvsc_stats *rx_stats;
 	int ret = 0;
-
+    printk("rx_pas\n");
 	if (!net || net->reg_state != NETREG_REGISTERED)
 		return NVSP_STAT_FAIL;
 
@@ -2428,6 +2428,21 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 
 	return RX_HANDLER_ANOTHER;
 }
+int my_netdev_rx_handler_register(struct net_device *dev,
+			       rx_handler_func_t *rx_handler,
+			       void *rx_handler_data)
+{
+	ASSERT_RTNL();
+
+	if (netdev_extended(dev)->rx_handler)
+		return -EBUSY;
+
+	/* Note: rx_handler_data must be set before rx_handler */
+	rcu_assign_pointer(netdev_extended(dev)->rx_handler_data, rx_handler_data);
+	rcu_assign_pointer(netdev_extended(dev)->rx_handler, rx_handler);
+
+	return 0;
+}
 
 /* enslave device <slave> to bond device <master> */
 int my_bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
@@ -2754,7 +2769,9 @@ int my_bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
 	//				 new_slave);
 
 	//res = netdev_rx_handler_register(slave_dev,netvsc_recv_callback,new_slave);//using this tx pa increasing,but rx is always 0
-	res = netdev_rx_handler_register(slave_dev,netvsc_vf_handle_frame,new_slave);
+	//res = netdev_rx_handler_register(slave_dev,netvsc_vf_handle_frame,new_slave);
+		res= netdev_rx_handler_register(bond_dev,
+					 netvsc_vf_handle_frame, slave_dev);
 	printk("bd_15_0:slave_dev:%lx\n",(uintptr_t)slave_dev);
 	if (res) {
 		netdev_dbg(bond_dev, "Error %d calling netdev_rx_handler_register\n", res);
@@ -2816,28 +2833,12 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 		goto rx_handler_failed;
 	}	
 	
-	rcu_assign_pointer(netdev_extended(ndev)->rx_handler_data, vf_netdev);
+	//rcu_assign_pointer(netdev_extended(ndev)->rx_handler_data, vf_netdev);
 	rcu_assign_pointer(netdev_extended(vf_netdev)->rx_handler, NULL);
 
 #if 1	
 	ret = netdev_rx_handler_register(vf_netdev,
 					 netvsc_vf_handle_frame, ndev);
-
-	int netdev_rx_handler_register(struct net_device *dev,
-					   rx_handler_func_t *rx_handler,
-					   void *rx_handler_data)
-	{
-		ASSERT_RTNL();
-	
-		if (netdev_extended(dev)->rx_handler)
-			return -EBUSY;
-	
-		/* Note: rx_handler_data must be set before rx_handler */
-		rcu_assign_pointer(netdev_extended(dev)->rx_handler_data, rx_handler_data);
-		rcu_assign_pointer(netdev_extended(dev)->rx_handler, rx_handler);
-	
-		return 0;
-	}
 
 	if (ret != 0) {
 		netdev_err(vf_netdev,
