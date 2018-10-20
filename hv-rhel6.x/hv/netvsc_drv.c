@@ -2769,9 +2769,9 @@ int my_bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
 	//				 new_slave);
 
 	//res = netdev_rx_handler_register(slave_dev,netvsc_recv_callback,new_slave);//using this tx pa increasing,but rx is always 0
-	//res = netdev_rx_handler_register(slave_dev,netvsc_vf_handle_frame,new_slave);
-		res= netdev_rx_handler_register(bond_dev,
-					 netvsc_vf_handle_frame, new_slave);
+	res = netdev_rx_handler_register(slave_dev,netvsc_vf_handle_frame,new_slave);
+	//	res= netdev_rx_handler_register(bond_dev,
+		//			 netvsc_vf_handle_frame, new_slave);
 	printk("bd_15_0:slave_dev:%lx\n",(uintptr_t)slave_dev);
 	if (res) {
 		netdev_dbg(bond_dev, "Error %d calling netdev_rx_handler_register\n", res);
@@ -2837,8 +2837,8 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	rcu_assign_pointer(netdev_extended(vf_netdev)->rx_handler, NULL);
 
 #if 1	
-	ret = netdev_rx_handler_register(vf_netdev,
-					 netvsc_vf_handle_frame, ndev);
+	//ret = netdev_rx_handler_register(vf_netdev,
+	//				 netvsc_vf_handle_frame, ndev);
 
 	if (ret != 0) {
 		netdev_err(vf_netdev,
