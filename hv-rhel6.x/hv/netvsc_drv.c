@@ -831,6 +831,7 @@ vf_injection_done:
 
 	/* Allocate a skb - TODO direct I/O to pages? */
 	skb = netvsc_alloc_recv_skb(net, csum_info, vlan, data, len);
+	printk("net:%lx,net_dev:%lx\n",(uintptr_t)net,(uintptr_t)net_device);
 	if (unlikely(!skb)) {
 		++net->stats.rx_dropped;
 		return NVSP_STAT_FAIL;
@@ -2772,7 +2773,7 @@ int my_bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
 	res = netdev_rx_handler_register(slave_dev,netvsc_vf_handle_frame,new_slave);
 	//	res= netdev_rx_handler_register(bond_dev,
 		//			 netvsc_vf_handle_frame, new_slave);
-	printk("bd_15_0:slave_dev:%lx\n",(uintptr_t)slave_dev);
+	printk("bd_15_0:slave_dev:%lx,slave_dev->rx_hanler:%lx\n",(uintptr_t)slave_dev,(uintptr_t)(netdev_extended(slave_dev)->rx_handler));
 	if (res) {
 		netdev_dbg(bond_dev, "Error %d calling netdev_rx_handler_register\n", res);
 		goto err_dest_symlinks;
@@ -2834,7 +2835,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	}	
 	
 	//rcu_assign_pointer(netdev_extended(ndev)->rx_handler_data, vf_netdev);
-	rcu_assign_pointer(netdev_extended(vf_netdev)->rx_handler, NULL);
+	//rcu_assign_pointer(netdev_extended(vf_netdev)->rx_handler, NULL);
 
 #if 1	
 	//ret = netdev_rx_handler_register(vf_netdev,
@@ -2917,6 +2918,9 @@ static void netvsc_vf_setup(struct work_struct *w)
 	rtnl_unlock();
 }
 
+//bond_slave_get_rcu
+//	struct sock
+//	struct sk_buff
 
 static int netvsc_register_vf(struct net_device *vf_netdev)
 {
@@ -2943,6 +2947,7 @@ static int netvsc_register_vf(struct net_device *vf_netdev)
     bond_dev = netdev_priv(ndev) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
 	if (!netvsc_dev || net_device_ctx->vf_netdev)
 		return NOTIFY_DONE;
+	net_device_ctx->vf_netdev = vf_netdev;
 
 	if (netvsc_vf_join(vf_netdev, ndev) != 0)
 		return NOTIFY_DONE;
@@ -2972,22 +2977,36 @@ static int netvsc_vf_up(struct net_device *vf_netdev)
 	struct net_device_context *net_device_ctx;
 	struct netvsc_device *netvsc_dev;
 	struct net_device *ndev;
-
+    printk("up_0\n");
 	ndev = get_netvsc_byref(vf_netdev);
+	printk("up_1\n");
+
 	if (!ndev)
+	{
+    	printk("up_2\n");
 		return NOTIFY_DONE;
+	}
 
 	net_device_ctx = netdev_priv(ndev);
+	printk("up_3\n");
 	netvsc_dev = rtnl_dereference(net_device_ctx->nvdev);
+	printk("up_4\n");
 	if (!netvsc_dev)
+	{
+	    printk("up_5\n");
 		return NOTIFY_DONE;
+	}
+	printk("up_6\n");
 
 	/* Bump refcount when datapath is acvive - Why? */
 	rndis_filter_open(netvsc_dev);
+	printk("up_7\n");
 
 	/* notify the host to switch the data path. */
 	netvsc_switch_datapath(ndev, true);
+	printk("up_8\n");
 	netdev_info(ndev, "Data path switched to VF: %s\n", vf_netdev->name);
+	printk("up_9\n");
 
 	return NOTIFY_OK;
 }
@@ -3217,31 +3236,44 @@ static int netvsc_netdev_event(struct notifier_block *this,
 #else
 	struct net_device *event_dev = ptr;
 #endif
+    printk("aabb\n");
 	/* Skip our own events */
 	if (event_dev->netdev_ops == &device_ops)
-		return NOTIFY_DONE;
+	{
+	    printk("aabb_0\n");
+	    return NOTIFY_DONE;
+	}
 
 	/* Avoid non-Ethernet type devices */
 	if (event_dev->type != ARPHRD_ETHER)
-		return NOTIFY_DONE;
+	{	printk("aabb_1\n");
+	    return NOTIFY_DONE;
+	}
 
 	/* Avoid Vlan dev with same MAC registering as VF */
 	if (is_vlan_dev(event_dev))
-		return NOTIFY_DONE;
+	{	printk("aabb_2\n");
+	    return NOTIFY_DONE;
+	}
 
 	/* Avoid Bonding master dev with same MAC registering as VF */
 	if ((event_dev->priv_flags & IFF_BONDING) &&
 	    (event_dev->flags & IFF_MASTER))
-		return NOTIFY_DONE;
-
+	{	printk("aabb_3\n");
+	    return NOTIFY_DONE;
+	}
 	switch (event) {
 	case NETDEV_REGISTER:
+		printk("aabb_4\n");
 		return netvsc_register_vf(event_dev);
 	case NETDEV_UNREGISTER:
+		printk("aabb_5\n");
 		return netvsc_unregister_vf(event_dev);
 	case NETDEV_UP:
+		printk("aabb_6\n");
 		return netvsc_vf_up(event_dev);
 	case NETDEV_DOWN:
+		printk("aabb_7\n");
 		return netvsc_vf_down(event_dev);
 	default:
 		return NOTIFY_DONE;
@@ -3269,7 +3301,7 @@ static int __init netvsc_drv_init(void)
 			ring_size);
 	}
 	ret = vmbus_driver_register(&netvsc_drv);
-
+    printk("drv_init\n");
 	if (ret)
 		return ret;
 
