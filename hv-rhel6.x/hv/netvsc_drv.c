@@ -2827,6 +2827,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	printk("vf_netdev:%lx, ndev:%lx\n",(uintptr_t)(vf_netdev),(uintptr_t)(ndev));
 
 	ret = my_bond_enslave(ndev, vf_netdev);
+	printk("vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
 	if(ret != 0){
 		netdev_err(vf_netdev,
 			   "can not bond_enslave (err = %d)\n",
@@ -2871,7 +2872,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	return 0;
 
 upper_link_failed:
-	netdev_rx_handler_unregister(vf_netdev);
+	//netdev_rx_handler_unregister(vf_netdev);
 rx_handler_failed:
 	return ret;
 }
@@ -2959,6 +2960,7 @@ static int netvsc_register_vf(struct net_device *vf_netdev)
 
 	dev_hold(vf_netdev);
 	net_device_ctx->vf_netdev = vf_netdev;
+	printk("end:vf_rg:vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
 	return NOTIFY_OK;
 }
 
@@ -3006,7 +3008,7 @@ static int netvsc_vf_up(struct net_device *vf_netdev)
 	netvsc_switch_datapath(ndev, true);
 	printk("up_8\n");
 	netdev_info(ndev, "Data path switched to VF: %s\n", vf_netdev->name);
-	printk("up_9\n");
+	printk("up_9:vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
 
 	return NOTIFY_OK;
 }
