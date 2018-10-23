@@ -2415,7 +2415,7 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 {
 	struct sk_buff *skb = *pskb;
 	struct net_device_extended * steve_temp = netdev_extended(skb->dev);
-	struct net_device *ndev = rcu_dereference(steve_temp->rx_handler_data);
+	struct net_device *ndev = rcu_dereference(steve_temp->dev);
 	struct net_device_context *ndev_ctx = netdev_priv(ndev);
 	struct netvsc_vf_pcpu_stats *pcpu_stats
 		 = this_cpu_ptr(ndev_ctx->vf_stats);
@@ -2950,6 +2950,10 @@ static int netvsc_register_vf(struct net_device *vf_netdev)
 		return NOTIFY_DONE;
 	net_device_ctx->vf_netdev = vf_netdev;
 
+        printk("end:vf_rg:vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
+                printk("end:vf_rg:vf_extend->dev:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->dev));
+
+
 	if (netvsc_vf_join(vf_netdev, ndev) != 0)
 		return NOTIFY_DONE;
 
@@ -2961,6 +2965,7 @@ static int netvsc_register_vf(struct net_device *vf_netdev)
 	dev_hold(vf_netdev);
 	net_device_ctx->vf_netdev = vf_netdev;
 	printk("end:vf_rg:vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
+		printk("end:vf_rg:vf_extend->dev:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->dev));
 	return NOTIFY_OK;
 }
 
