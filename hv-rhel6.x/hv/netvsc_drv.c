@@ -2827,6 +2827,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	printk("vf_netdev:%lx, ndev:%lx\n",(uintptr_t)(vf_netdev),(uintptr_t)(ndev));
 
 	ret = my_bond_enslave(ndev, vf_netdev);
+	rcu_assign_pointer(netdev_extended(vf_netdev)->dev, ndev);
 	printk("vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
 	if(ret != 0){
 		netdev_err(vf_netdev,
@@ -2949,10 +2950,6 @@ static int netvsc_register_vf(struct net_device *vf_netdev)
 	if (!netvsc_dev || net_device_ctx->vf_netdev)
 		return NOTIFY_DONE;
 	net_device_ctx->vf_netdev = vf_netdev;
-
-        printk("end:vf_rg:vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
-                printk("end:vf_rg:vf_extend->dev:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->dev));
-
 
 	if (netvsc_vf_join(vf_netdev, ndev) != 0)
 		return NOTIFY_DONE;
