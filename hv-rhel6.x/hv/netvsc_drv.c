@@ -2654,7 +2654,7 @@ static int netvsc_netdev_event(struct notifier_block *this,
 #else
 	struct net_device *event_dev = ptr;
 #endif
-    printk("aabb:event_dev:%lx\n",(uintptr_t)event_dev);
+    printk("aabb:event_dev:%lx,event:%d\n",(uintptr_t)event_dev,event);
 	/* Skip our own events */
 	if (event_dev->netdev_ops == &device_ops)
 	{
