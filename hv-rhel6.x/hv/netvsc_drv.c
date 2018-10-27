@@ -127,6 +127,7 @@ static int netvsc_close(struct net_device *net)
 	int ret = 0;
 	u32 aread, i, msec = 10, retry = 0, retry_max = 20;
 	struct vmbus_channel *chn;
+        WARN_ONCE(1,"hello");
     printk("cl_0:cls:%lx\n",(uintptr_t)net);
 	netif_tx_disable(net);
 	printk("cl_1\n");
@@ -788,7 +789,7 @@ vf_injection_done:
 
 	/* Allocate a skb - TODO direct I/O to pages? */
 	skb = netvsc_alloc_recv_skb(net, csum_info, vlan, data, len);
-	printk("net:%lx,net_dev:%lx\n",(uintptr_t)net,(uintptr_t)net_device);
+	//printk("net:%lx,net_dev:%lx\n",(uintptr_t)net,(uintptr_t)net_device);
 	if (unlikely(!skb)) {
 		++net->stats.rx_dropped;
 		return NVSP_STAT_FAIL;
