@@ -747,7 +747,7 @@ int netvsc_recv_callback(struct net_device *net,
 	struct sk_buff *vf_skb;
 	struct netvsc_stats *rx_stats;
 	int ret = 0;
-    printk("rx_pas\n");
+    //printk("rx_pas\n");
 	if (!net || net->reg_state != NETREG_REGISTERED)
 		return NVSP_STAT_FAIL;
 
