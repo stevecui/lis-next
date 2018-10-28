@@ -1865,13 +1865,14 @@ void netdev_upper_dev_unlink_75(struct net_device *dev,
 				      &changeupper_info.info);
 }
 #endif
+call_netdevice_notifiers
 
 static void netdev_upper_dev_unlink(struct net_device *vf_netdev,
                                   struct net_device *ndev)
 {
         //netdev_set_master(NULL, ndev);
-        //netdev_set_master(ndev, NULL);
-        atomic_set(&dev->refcnt,0);
+        netdev_set_master(ndev, NULL);
+        //atomic_set(&dev->refcnt,0);
 //		atomic_sub
 #if 0
 		struct netdev_notifier_changeupper_info changeupper_info;
