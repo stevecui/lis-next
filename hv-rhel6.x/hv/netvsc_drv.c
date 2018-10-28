@@ -1864,8 +1864,6 @@ int my_netdev_rx_handler_register(struct net_device *dev,
 	return 0;
 }
 
-static struct net_device * master_dev_only_for_unregister = NULL;
-
 /* enslave device <slave> to bond device <master> */
 int my_bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
 {
@@ -1884,7 +1882,6 @@ int my_bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
 			    slave_dev->name);
 	}
 	printk("bd_1\n");
-	master_dev_only_for_unregister = bond_dev;
 
 	/* already enslaved */
 	if (slave_dev->flags & IFF_SLAVE) {
@@ -2676,7 +2673,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 	netdev_info(ndev, "VF unregistering: %s\n", vf_netdev->name);
 
 	//netdev_upper_dev_unlink(vf_netdev, ndev);
-	rtmsg_ifinfo(RTM_NEWLINK, master_dev_only_for_unregister, IFF_MASTER);
+	rtmsg_ifinfo(RTM_NEWLINK, ndev, IFF_MASTER);
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
 	dev_put(vf_netdev);
