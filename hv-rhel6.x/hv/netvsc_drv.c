@@ -1822,7 +1822,8 @@ static int netdev_master_upper_dev_link(struct net_device *vf_netdev,
 static void netdev_upper_dev_unlink(struct net_device *vf_netdev,
                                   struct net_device *ndev)
 {
-        netdev_set_master(NULL, ndev);
+        //netdev_set_master(NULL, ndev);
+        netdev_set_master(ndev, NULL);
 }
 
 /* Called when VF is injecting data into network stack.
