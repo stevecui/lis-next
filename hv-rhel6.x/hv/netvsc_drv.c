@@ -1819,11 +1819,77 @@ static int netdev_master_upper_dev_link(struct net_device *vf_netdev,
         return err;
 }
 
+#if 0
+/**
+ * netdev_upper_dev_unlink - Removes a link to upper device
+ * @dev: device
+ * @upper_dev: new upper device
+ *
+ * Removes a link to device which is upper to this one. The caller must hold
+ * the RTNL lock.
+ */
+void netdev_upper_dev_unlink_75(struct net_device *dev,
+			     struct net_device *upper_dev)
+{
+	struct netdev_notifier_changeupper_info changeupper_info;
+	struct netdev_adjacent *i, *j;
+	ASSERT_RTNL();
+
+	changeupper_info.upper_dev = upper_dev;
+	changeupper_info.master = netdev_master_upper_dev_get(dev) == upper_dev;
+	changeupper_info.linking = false;
+
+	call_netdevice_notifiers_info(NETDEV_PRECHANGEUPPER, dev,
+				      &changeupper_info.info);
+
+	__netdev_adjacent_dev_unlink_neighbour(dev, upper_dev);
+
+	/* Here is the tricky part. We must remove all dev's lower
+	 * devices from all upper_dev's upper devices and vice
+	 * versa, to maintain the graph relationship.
+	 */
+	list_for_each_entry(i, &dev->lower_dev_list, list)
+		list_for_each_entry(j, &upper_dev->upper_dev_list, list)
+			__netdev_adjacent_dev_unlink(i->dev, j->dev, i->ref_nr);
+
+	/* remove also the devices itself from lower/upper device
+	 * list
+	 */
+	list_for_each_entry(i, &dev->lower_dev_list, list)
+		__netdev_adjacent_dev_unlink(i->dev, upper_dev, i->ref_nr);
+
+	list_for_each_entry(i, &upper_dev->upper_dev_list, list)
+		__netdev_adjacent_dev_unlink(dev, i->dev, i->ref_nr);
+
+	call_netdevice_notifiers_info(NETDEV_CHANGEUPPER, dev,
+				      &changeupper_info.info);
+}
+#endif
+
 static void netdev_upper_dev_unlink(struct net_device *vf_netdev,
                                   struct net_device *ndev)
 {
         //netdev_set_master(NULL, ndev);
-        netdev_set_master(ndev, NULL);
+        //netdev_set_master(ndev, NULL);
+        atomic_set(&dev->refcnt,0);
+//		atomic_sub
+#if 0
+		struct netdev_notifier_changeupper_info changeupper_info;
+	struct netdev_adjacent *i, *j;
+	ASSERT_RTNL();
+
+	changeupper_info.upper_dev = upper_dev;
+	changeupper_info.master = netdev_master_upper_dev_get(dev) == upper_dev;
+	changeupper_info.linking = false;
+
+	call_netdevice_notifiers_info(NETDEV_PRECHANGEUPPER, dev,
+				      &changeupper_info.info);
+
+	__netdev_adjacent_dev_unlink_neighbour(dev, upper_dev);
+
+	call_netdevice_notifiers_info(NETDEV_CHANGEUPPER, dev,
+				      &changeupper_info.info);
+#endif	
 }
 
 /* Called when VF is injecting data into network stack.
@@ -2656,6 +2722,28 @@ static int netvsc_vf_down(struct net_device *vf_netdev)
 	return NOTIFY_OK;
 }
 
+static int netvsc_unregister_vf_75(struct net_device *vf_netdev)
+{
+	struct net_device *ndev;
+	struct net_device_context *net_device_ctx;
+
+	ndev = get_netvsc_byref(vf_netdev);
+	if (!ndev)
+		return NOTIFY_DONE;
+
+	net_device_ctx = netdev_priv(ndev);
+	cancel_delayed_work_sync(&net_device_ctx->vf_takeover);
+
+	netdev_info(ndev, "VF unregistering: %s\n", vf_netdev->name);
+
+	netdev_rx_handler_unregister(vf_netdev);
+	netdev_upper_dev_unlink(vf_netdev, ndev);
+	RCU_INIT_POINTER(net_device_ctx->vf_netdev, NULL);
+	dev_put(vf_netdev);
+
+	return NOTIFY_OK;
+}
+
 static int netvsc_unregister_vf(struct net_device *vf_netdev)
 {
 	struct net_device *ndev;
@@ -2672,8 +2760,8 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 
 	netdev_info(ndev, "VF unregistering: %s\n", vf_netdev->name);
 
-	//netdev_upper_dev_unlink(vf_netdev, ndev);
-	rtmsg_ifinfo(RTM_NEWLINK, ndev, IFF_MASTER);
+	netdev_upper_dev_unlink(vf_netdev, ndev);
+	//rtmsg_ifinfo(RTM_NEWLINK, ndev, IFF_MASTER);
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
 	dev_put(vf_netdev);
