@@ -2470,7 +2470,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 
 	netdev_info(ndev, "VF unregistering: %s\n", vf_netdev->name);
 
-	netdev_upper_dev_unlink(vf_netdev, ndev);
+	//netdev_upper_dev_unlink(vf_netdev, ndev);
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
 	dev_put(vf_netdev);
