@@ -1810,8 +1810,8 @@ static int netdev_master_upper_dev_link(struct net_device *vf_netdev,
                                       struct net_device *ndev)
 {
         int err;
-        printk("nd:%lx\n",(uintptr_t)ndev);
-        printk("vf:%lx\n",(uintptr_t)vf_netdev);
+        printk("netdev_set_master:nd:%lx,nd->flags:%x\n",(uintptr_t)ndev,ndev->flags);
+        printk("netdev_set_master:vf:%lx,vf->flags:%x\n",(uintptr_t)vf_netdev->flags);
         //err = netdev_set_master(ndev, vf_netdev);
         //vf_netdev->master = NULL;
         err = netdev_set_master(vf_netdev,ndev);
@@ -2180,7 +2180,7 @@ int my_bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
 
 	if (!(bond_dev->features & NETIF_F_LRO))
 		dev_disable_lro(slave_dev);
-	printk("bd_15:bd_dev:%lx\n",(uintptr_t)bond_dev);
+	printk("bd_15:bd_dev:%lx,bd_dev->flags:%x\n",(uintptr_t)bond_dev,bond_dev->flags);
 
 	//res = netdev_rx_handler_register(slave_dev, bond_handle_frame,
 	//				 new_slave);
@@ -2240,7 +2240,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	struct bonding *bond_dev = netdev_priv(ndev) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
 
 	int ret;
-	printk("vf_netdev:%lx, ndev:%lx\n",(uintptr_t)(vf_netdev),(uintptr_t)(ndev));
+	printk("vf_netdev:%lx,vf->flags:%x,ndev:%lx,ndev->flags:%x\n",(uintptr_t)(vf_netdev),vf_netdev->flags,(uintptr_t)(ndev),ndev->flags);
 
 	ret = my_bond_enslave(ndev, vf_netdev);
 	//rcu_assign_pointer(netdev_extended(vf_netdev)->dev, ndev);
