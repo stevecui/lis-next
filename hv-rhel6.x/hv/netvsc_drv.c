@@ -1864,6 +1864,8 @@ int my_netdev_rx_handler_register(struct net_device *dev,
 	return 0;
 }
 
+static struct net_device * master_dev_only_for_unregister = NULL;
+
 /* enslave device <slave> to bond device <master> */
 int my_bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
 {
@@ -1882,6 +1884,7 @@ int my_bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
 			    slave_dev->name);
 	}
 	printk("bd_1\n");
+	master_dev_only_for_unregister = bond_dev;
 
 	/* already enslaved */
 	if (slave_dev->flags & IFF_SLAVE) {
@@ -2230,8 +2233,210 @@ my_define:
 	printk("bd_22:res:%d\n",res);
 	return res;
 }
+#if 0
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+/* Try to release the slave device <slave> from the bond device <master>
+ * It is legal to access curr_active_slave without a lock because all the function
+ * is RTNL-locked. If "all" is true it means that the function is being called
+ * while destroying a bond interface and all slaves are being released.
+ *
+ * The rules for slave state should be:
+ *   for Active/Backup:
+ *     Active stays on all backups go down
+ *   for Bonded connections:
+ *     The first up interface should be left on and all others downed.
+ */
+static int __bond_release_one(struct net_device *bond_dev,
+			      struct net_device *slave_dev,
+			      bool all)
+{
+	struct bonding *bond = netdev_priv(bond_dev);
+	struct slave *slave, *oldcurrent;
+	struct sockaddr addr;
+	u32 old_features = bond_dev->features;
+	int old_flags = bond_dev->flags;
 
+	/* slave is not a slave or master is not master of this slave */
+	if (!(slave_dev->flags & IFF_SLAVE) ||
+	    (slave_dev->master != bond_dev)) {
+		netdev_err(bond_dev, "cannot release %s\n",
+			   slave_dev->name);
+		return -EINVAL;
+	}
 
+	block_netpoll_tx();
+
+	slave = bond_get_slave_by_dev(bond, slave_dev);
+	if (!slave) {
+		/* not a slave of this bond */
+		netdev_info(bond_dev, "%s not enslaved\n",
+			    slave_dev->name);
+		unblock_netpoll_tx();
+		return -EINVAL;
+	}
+
+	bond_sysfs_slave_del(slave);
+
+	/* recompute stats just before removing the slave */
+	bond_get_stats(bond->dev, &bond->bond_stats);
+
+	/* release the slave from its bond */
+	bond_detach_slave(bond, slave);
+
+	bond_upper_dev_unlink(bond_dev, slave_dev);
+	/* unregister rx_handler early so bond_handle_frame wouldn't be called
+	 * for this slave anymore.
+	 */
+	netdev_rx_handler_unregister(slave_dev);
+
+	if (BOND_MODE(bond) == BOND_MODE_8023AD)
+		bond_3ad_unbind_slave(slave);
+
+	if (bond_mode_uses_xmit_hash(bond))
+		bond_update_slave_arr(bond, slave);
+
+	netdev_info(bond_dev, "Releasing %s interface %s\n",
+		    bond_is_active_slave(slave) ? "active" : "backup",
+		    slave_dev->name);
+
+	oldcurrent = rcu_access_pointer(bond->curr_active_slave);
+
+	RCU_INIT_POINTER(bond->current_arp_slave, NULL);
+
+	if (!all && (!bond->params.fail_over_mac ||
+		     BOND_MODE(bond) != BOND_MODE_ACTIVEBACKUP)) {
+		if (ether_addr_equal_64bits(bond_dev->dev_addr, slave->perm_hwaddr) &&
+		    bond_has_slaves(bond))
+			netdev_warn(bond_dev, "the permanent HWaddr of %s - %pM - is still in use by %s - set the HWaddr of %s to a different address to avoid conflicts\n",
+				    slave_dev->name, slave->perm_hwaddr,
+				    bond_dev->name, slave_dev->name);
+	}
+
+	if (rtnl_dereference(bond->primary_slave) == slave)
+		RCU_INIT_POINTER(bond->primary_slave, NULL);
+
+	if (oldcurrent == slave) {
+		bond_unicast_sync(bond, oldcurrent, NULL);
+		bond_change_active_slave(bond, NULL);
+	}
+
+	if (bond_is_lb(bond)) {
+		/* Must be called only after the slave has been
+		 * detached from the list and the curr_active_slave
+		 * has been cleared (if our_slave == old_current),
+		 * but before a new active slave is selected.
+		 */
+		bond_alb_deinit_slave(bond, slave);
+	}
+
+	if (all) {
+		RCU_INIT_POINTER(bond->curr_active_slave, NULL);
+	} else if (oldcurrent == slave) {
+		/* Note that we hold RTNL over this sequence, so there
+		 * is no concern that another slave add/remove event
+		 * will interfere.
+		 */
+		bond_select_active_slave(bond);
+	}
+
+	if (!bond_has_slaves(bond)) {
+		bond_set_carrier(bond);
+		eth_hw_addr_random(bond_dev);
+	}
+
+	unblock_netpoll_tx();
+	synchronize_rcu();
+	bond->slave_cnt--;
+
+	if (!bond_has_slaves(bond)) {
+		call_netdevice_notifiers(NETDEV_CHANGEADDR, bond->dev);
+		call_netdevice_notifiers(NETDEV_RELEASE, bond->dev);
+	}
+
+	bond_compute_features(bond);
+	if (!(bond_dev->features & NETIF_F_VLAN_CHALLENGED) &&
+	    (old_features & NETIF_F_VLAN_CHALLENGED))
+		netdev_info(bond_dev, "last VLAN challenged slave %s left bond %s - VLAN blocking is removed\n",
+			    slave_dev->name, bond_dev->name);
+
+	/* must do this from outside any spinlocks */
+	bond_destroy_slave_symlinks(bond_dev, slave_dev);
+
+	bond_del_vlans_from_slave(bond, slave_dev);
+
+	/* If the mode uses primary, then we should only remove its
+	 * promisc and mc settings if it was the curr_active_slave, but that was
+	 * already taken care of above when we detached the slave
+	 */
+	if (!bond_uses_primary(bond)) {
+		/* unset promiscuity level from slave
+		 * NOTE: The NETDEV_CHANGEADDR call above may change the value
+		 * of the IFF_PROMISC flag in the bond_dev, but we need the
+		 * value of that flag before that change, as that was the value
+		 * when this slave was attached, so we cache at the start of the
+		 * function and use it here. Same goes for ALLMULTI below
+		 */
+		if (old_flags & IFF_PROMISC)
+			dev_set_promiscuity(slave_dev, -1);
+
+		/* unset allmulti level from slave */
+		if (old_flags & IFF_ALLMULTI)
+			dev_set_allmulti(slave_dev, -1);
+
+		/* flush master's mc_list from slave */
+		netif_addr_lock_bh(bond_dev);
+		bond_mc_list_flush(bond_dev, slave_dev);
+		netif_addr_unlock_bh(bond_dev);
+	}
+
+	slave_disable_netpoll(slave);
+
+	/* close slave before restoring its mac address */
+	dev_close(slave_dev);
+
+	if (bond->params.fail_over_mac != BOND_FOM_ACTIVE ||
+	    BOND_MODE(bond) != BOND_MODE_ACTIVEBACKUP) {
+		/* restore original ("permanent") mac address */
+		memcpy(addr.sa_data, slave->perm_hwaddr, ETH_ALEN);
+		addr.sa_family = slave_dev->type;
+		dev_set_mac_address(slave_dev, &addr);
+	}
+
+	dev_set_mtu(slave_dev, slave->original_mtu);
+
+	slave_dev->priv_flags &= ~IFF_BONDING;
+
+	bond_free_slave(slave);
+
+	return 0;
+}
+
+/* A wrapper used because of ndo_del_link */
+int bond_release(struct net_device *bond_dev, struct net_device *slave_dev)
+{
+	return __bond_release_one(bond_dev, slave_dev, false);
+}
+
+/* First release a slave and then destroy the bond if no more slaves are left.
+ * Must be under rtnl_lock when this function is called.
+ */
+static int  bond_release_and_destroy(struct net_device *bond_dev,
+				     struct net_device *slave_dev)
+{
+	struct bonding *bond = netdev_priv(bond_dev);
+	int ret;
+
+	ret = bond_release(bond_dev, slave_dev);
+	if (ret == 0 && !bond_has_slaves(bond)) {
+		bond_dev->priv_flags |= IFF_DISABLE_NETPOLL;
+		netdev_info(bond_dev, "Destroying bond %s\n",
+			    bond_dev->name);
+		unregister_netdevice(bond_dev);
+	}
+	return ret;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+#endif
 //struct slave  struct bond
 static int netvsc_vf_join(struct net_device *vf_netdev,
 			  struct net_device *ndev)
@@ -2471,6 +2676,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 	netdev_info(ndev, "VF unregistering: %s\n", vf_netdev->name);
 
 	//netdev_upper_dev_unlink(vf_netdev, ndev);
+	rtmsg_ifinfo(RTM_NEWLINK, master_dev_only_for_unregister, IFF_MASTER);
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
 	dev_put(vf_netdev);
