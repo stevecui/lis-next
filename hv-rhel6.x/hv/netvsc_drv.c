@@ -1910,8 +1910,8 @@ static void netdev_upper_dev_unlink(struct net_device *vf_netdev,
 {
         //netdev_set_master(NULL, ndev);
         //netdev_set_master(ndev, NULL);
-        //netdev_set_master(vf_netdev, NULL);
-netdev_set_master_unreg(ndev, NULL);
+        netdev_set_master(vf_netdev, NULL);
+//netdev_set_master_unreg(ndev, NULL);
 
         //atomic_set(&dev->refcnt,0);
 //		atomic_sub
