@@ -2743,6 +2743,7 @@ static int netvsc_unregister_vf_75(struct net_device *vf_netdev)
 	netdev_upper_dev_unlink(vf_netdev, ndev);
 	RCU_INIT_POINTER(net_device_ctx->vf_netdev, NULL);
 	//dev_put(vf_netdev);
+	atomic64_set(&vf_netdev->refcnt,0);
 
 	return NOTIFY_OK;
 }
