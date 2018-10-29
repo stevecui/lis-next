@@ -1866,13 +1866,52 @@ void netdev_upper_dev_unlink_75(struct net_device *dev,
 }
 #endif
 //call_netdevice_notifiers
+int netdev_set_master_unreg(struct net_device *slave, struct net_device *master)
+{
+	struct net_device *old = slave->master;
+
+	ASSERT_RTNL();
+    printk("sm_0:set_master:slave:%lx,old:%lx\n",(uintptr_t)slave,(uintptr_t)old);
+	if (master) {
+		printk("sm_1:set_master:slave:%lx\n",(uintptr_t)slave);
+		if (old)
+			return -EBUSY;
+		dev_hold(master);
+	}
+
+	slave->master = master;
+	printk("sm_2:slave->master:%lx\n",(uintptr_t)(slave->master));
+
+	synchronize_net();
+
+	if (old)
+	{
+	    printk("sm_3\n");
+		dev_put(old);
+	}
+
+	if (master)
+	{
+		slave->flags |= IFF_SLAVE;
+		printk("sm_4\n");
+	}
+	else{
+		slave->flags &= ~IFF_SLAVE;
+		printk("sm_5\n");
+	}
+
+	rtmsg_ifinfo(RTM_NEWLINK, slave, IFF_MASTER);
+	printk("sm_6\n");
+	return 0;
+}
 
 static void netdev_upper_dev_unlink(struct net_device *vf_netdev,
                                   struct net_device *ndev)
 {
         //netdev_set_master(NULL, ndev);
-        netdev_set_master(ndev, NULL);
+        //netdev_set_master(ndev, NULL);
         //netdev_set_master(vf_netdev, NULL);
+netdev_set_master_unreg(ndev, NULL);
 
         //atomic_set(&dev->refcnt,0);
 //		atomic_sub
