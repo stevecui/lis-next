@@ -2724,7 +2724,7 @@ static int netvsc_vf_down(struct net_device *vf_netdev)
 
 	return NOTIFY_OK;
 }
-
+#if 0
 static int netvsc_unregister_vf_75(struct net_device *vf_netdev)
 {
 	struct net_device *ndev;
@@ -2747,6 +2747,7 @@ static int netvsc_unregister_vf_75(struct net_device *vf_netdev)
 
 	return NOTIFY_OK;
 }
+#endif
 //IFF_SLAVE
 
 static int netvsc_unregister_vf(struct net_device *vf_netdev)
@@ -2769,7 +2770,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 	//rtmsg_ifinfo(RTM_NEWLINK, ndev, IFF_MASTER);
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
-	dev_put(vf_netdev);
+	//dev_put(vf_netdev);
 	module_put(THIS_MODULE);
 	return NOTIFY_OK;
 }
