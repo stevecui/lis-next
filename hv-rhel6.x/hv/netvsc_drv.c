@@ -1871,7 +1871,9 @@ static void netdev_upper_dev_unlink(struct net_device *vf_netdev,
                                   struct net_device *ndev)
 {
         //netdev_set_master(NULL, ndev);
-        netdev_set_master(ndev, NULL);
+//        netdev_set_master(ndev, NULL);
+        netdev_set_master(vf_netdev, NULL);
+
         //atomic_set(&dev->refcnt,0);
 //		atomic_sub
 #if 0
@@ -2744,6 +2746,7 @@ static int netvsc_unregister_vf_75(struct net_device *vf_netdev)
 
 	return NOTIFY_OK;
 }
+//IFF_SLAVE
 
 static int netvsc_unregister_vf(struct net_device *vf_netdev)
 {
