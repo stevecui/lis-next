@@ -1865,7 +1865,7 @@ void netdev_upper_dev_unlink_75(struct net_device *dev,
 				      &changeupper_info.info);
 }
 #endif
-call_netdevice_notifiers
+//call_netdevice_notifiers
 
 static void netdev_upper_dev_unlink(struct net_device *vf_netdev,
                                   struct net_device *ndev)
