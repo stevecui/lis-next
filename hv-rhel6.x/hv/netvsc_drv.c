@@ -789,7 +789,7 @@ int netvsc_recv_callback(struct net_device *net,
 	struct sk_buff *vf_skb;
 	struct netvsc_stats *rx_stats;
 	int ret = 0;
-    //printk("rx_pas\n");
+    printk("rx_pas\n");
 	if (!net || net->reg_state != NETREG_REGISTERED)
 		return NVSP_STAT_FAIL;
 
@@ -831,7 +831,7 @@ vf_injection_done:
 
 	/* Allocate a skb - TODO direct I/O to pages? */
 	skb = netvsc_alloc_recv_skb(net, csum_info, vlan, data, len);
-	//printk("net:%lx,net_dev:%lx\n",(uintptr_t)net,(uintptr_t)net_device);
+	printk("net:%lx,net_dev:%lx\n",(uintptr_t)net,(uintptr_t)net_device);
 	if (unlikely(!skb)) {
 		++net->stats.rx_dropped;
 		return NVSP_STAT_FAIL;
@@ -2824,7 +2824,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	struct bonding *bond_dev = netdev_priv(ndev) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
 
 	int ret;
-	//printk("vf_netdev:%lx, ndev:%lx\n",(uintptr_t)(vf_netdev),(uintptr_t)(ndev));
+        printk("vf_netdev:%lx, ndev:%lx\n",(uintptr_t)(vf_netdev),(uintptr_t)(ndev));
 
 	ret = my_bond_enslave(ndev, vf_netdev);
 	//rcu_assign_pointer(netdev_extended(vf_netdev)->dev, ndev);
