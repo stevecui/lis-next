@@ -1909,9 +1909,9 @@ static void netdev_upper_dev_unlink(struct net_device *vf_netdev,
                                   struct net_device *ndev)
 {
         //netdev_set_master(NULL, ndev);
-        //netdev_set_master(ndev, NULL);
+//        netdev_set_master(ndev, NULL);
         netdev_set_master(vf_netdev, NULL);
-//netdev_set_master_unreg(ndev, NULL);
+//		netdev_set_master_unreg(ndev, NULL);
 
         //atomic_set(&dev->refcnt,0);
 //		atomic_sub
@@ -2553,8 +2553,8 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	printk("vf_netdev:%lx,vf->flags:%x,ndev:%lx,ndev->flags:%x\n",(uintptr_t)(vf_netdev),vf_netdev->flags,(uintptr_t)(ndev),ndev->flags);
 
 	ret = my_bond_enslave(ndev, vf_netdev);
-	//rcu_assign_pointer(netdev_extended(vf_netdev)->dev, ndev);
-	rcu_assign_pointer(netdev_extended(vf_netdev)->dev, vf_netdev);
+	rcu_assign_pointer(netdev_extended(vf_netdev)->dev, ndev);
+    //rcu_assign_pointer(netdev_extended(vf_netdev)->dev, vf_netdev);
 	printk("vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
 	if(ret != 0){
 		netdev_err(vf_netdev,
@@ -2793,6 +2793,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 {
 	struct net_device *ndev;
 	struct net_device_context *net_device_ctx;
+	rcu_assign_pointer(netdev_extended(vf_netdev)->dev, vf_netdev);
 
 	ndev = get_netvsc_byref(vf_netdev);
 	if (!ndev)
@@ -2804,6 +2805,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 	netvsc_vf_down(vf_netdev);
 
 	netdev_info(ndev, "VF unregistering: %s\n", vf_netdev->name);
+	
 
 	netdev_upper_dev_unlink(vf_netdev, ndev);
 	//rtmsg_ifinfo(RTM_NEWLINK, ndev, IFF_MASTER);
