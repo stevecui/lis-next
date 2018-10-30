@@ -2421,7 +2421,7 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 		 = this_cpu_ptr(ndev_ctx->vf_stats);
 
 	skb->dev = ndev;
-    //printk("nd_vf_hd:%lx\n",(uintptr_t)ndev);
+    printk("nd_vf_hd:%lx\n",(uintptr_t)ndev);
 	u64_stats_update_begin(&pcpu_stats->syncp);
 	pcpu_stats->rx_packets++;
 	pcpu_stats->rx_bytes += skb->len;
@@ -2827,7 +2827,8 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	//printk("vf_netdev:%lx, ndev:%lx\n",(uintptr_t)(vf_netdev),(uintptr_t)(ndev));
 
 	ret = my_bond_enslave(ndev, vf_netdev);
-	rcu_assign_pointer(netdev_extended(vf_netdev)->dev, ndev);
+	//rcu_assign_pointer(netdev_extended(vf_netdev)->dev, ndev);
+	rcu_assign_pointer(netdev_extended(vf_netdev)->dev, vf_netdev);
 	//printk("vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
 	if(ret != 0){
 		netdev_err(vf_netdev,
