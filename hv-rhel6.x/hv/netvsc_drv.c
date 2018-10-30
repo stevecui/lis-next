@@ -1941,8 +1941,9 @@ static void netdev_upper_dev_unlink(struct net_device *vf_netdev,
 static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 {
 	struct sk_buff *skb = *pskb;
-	struct net_device_extended * steve_temp = netdev_extended(skb->dev);
-	struct net_device *ndev = rcu_dereference(steve_temp->dev);
+	//struct net_device_extended * steve_temp = netdev_extended(skb->dev);
+	//struct net_device *ndev = rcu_dereference(steve_temp->dev);
+	struct net_device *ndev = rcu_dereference(skb->dev->master);
 	struct net_device_context *ndev_ctx = netdev_priv(ndev);
 	struct netvsc_vf_pcpu_stats *pcpu_stats
 		 = this_cpu_ptr(ndev_ctx->vf_stats);
@@ -2553,8 +2554,8 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	printk("vf_netdev:%lx,vf->flags:%x,ndev:%lx,ndev->flags:%x\n",(uintptr_t)(vf_netdev),vf_netdev->flags,(uintptr_t)(ndev),ndev->flags);
 
 	ret = my_bond_enslave(ndev, vf_netdev);
-	rcu_assign_pointer(netdev_extended(vf_netdev)->dev, ndev);
-    //rcu_assign_pointer(netdev_extended(vf_netdev)->dev, vf_netdev);
+	//rcu_assign_pointer(netdev_extended(vf_netdev)->dev, ndev);
+    rcu_assign_pointer(netdev_extended(vf_netdev)->dev, vf_netdev);
 	printk("vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
 	if(ret != 0){
 		netdev_err(vf_netdev,
@@ -2793,7 +2794,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 {
 	struct net_device *ndev;
 	struct net_device_context *net_device_ctx;
-	rcu_assign_pointer(netdev_extended(vf_netdev)->dev, vf_netdev);
+	//rcu_assign_pointer(netdev_extended(vf_netdev)->dev, vf_netdev);
 
 	ndev = get_netvsc_byref(vf_netdev);
 	if (!ndev)
