@@ -1728,6 +1728,34 @@ static inline int slave_enable_netpoll(struct slave *slave)
 out:
 	return err;
 }
+static inline void slave_disable_netpoll(struct slave *slave)
+{
+	struct netpoll *np = slave->np;
+
+	if (!np)
+		return;
+
+	slave->np = NULL;
+	synchronize_rcu_bh();
+	__netpoll_cleanup(np);
+	kfree(np);
+}
+
+
+#else
+static inline int slave_enable_netpoll(struct slave *slave)
+{
+	return 0;
+}
+static inline void slave_disable_netpoll(struct slave *slave)
+{
+}
+static void bond_netpoll_cleanup(struct net_device *bond_dev)
+{
+}
+#endif
+
+
 
 static int bond_master_upper_dev_link(struct net_device *bond_dev,
 				      struct net_device *slave_dev,
