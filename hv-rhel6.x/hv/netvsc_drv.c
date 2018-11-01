@@ -2133,7 +2133,7 @@ err_unregister:
 err_dest_symlinks:
 
 err_free:
-
+err_close:
 err_detach:
 
 err_undo_flags:
