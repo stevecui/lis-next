@@ -2142,8 +2142,9 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
         return 0;
 
 upper_link_failed:
-
+        printk("uplink_failed!\n");
 rx_handler_failed:
+        printk("rx_handler_failed!\n");
 	return ret;
 }
 
