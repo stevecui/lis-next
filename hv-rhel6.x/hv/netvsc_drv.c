@@ -34,6 +34,7 @@
 #include <linux/in.h>
 #include <linux/slab.h>
 #include <linux/ipv6.h>
+#include <linux/mii.h>
 #include <net/arp.h>
 #include <net/route.h>
 #include <net/sock.h>
@@ -233,7 +234,7 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 		return 0;
 
 	hash = skb_get_hash(skb);
-	q_idx = net_device_ctx->tx_send_table[hash % VRSS_SEND_TAB_SIZE] %
+	q_idx = net_device_ctx->tx_table[hash % VRSS_SEND_TAB_SIZE] %
 		ndev->real_num_tx_queues;
 
 	return q_idx;
@@ -1954,36 +1955,6 @@ int my_bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
 	/* initialize slave stats */
 	dev_get_stats64(new_slave->dev, &new_slave->slave_stats);
 
-	/* If the mode uses primary, then the new slave gets the
-	 * master's promisc (and mc) settings only if it becomes the
-	 * curr_active_slave, and that is taken care of later when calling
-	 * bond_change_active()
-	 */
-	if (!bond_uses_primary(bond)) {
-		/* set promiscuity level to new slave */
-		if (bond_dev->flags & IFF_PROMISC) {
-			res = dev_set_promiscuity(slave_dev, 1);
-			if (res)
-				goto err_close;
-		}
-
-		/* set allmulti level to new slave */
-		if (bond_dev->flags & IFF_ALLMULTI) {
-			res = dev_set_allmulti(slave_dev, 1);
-			if (res)
-				goto err_close;
-		}
-
-		netif_addr_lock_bh(bond_dev);
-		/* upload master's mc_list to new slave */
-		for (dmi = bond_dev->mc_list; dmi; dmi = dmi->next)
-		{	
-		    dev_mc_add(slave_dev, dmi->dmi_addr,
-				   dmi->dmi_addrlen, 0);
-		}
-		netif_addr_unlock_bh(bond_dev);
-	}
-
 	bond_add_vlans_on_slave(bond, slave_dev);
 
 	prev_slave = bond_last_slave(bond);
@@ -2090,7 +2061,15 @@ err_unregister:
 	
 err_dest_symlinks:
 
+err_free:
+
 err_detach:
+
+err_undo_flags:
+
+err_restore_mac:
+
+err_restore_mtu:
 
 	return res;
 }
@@ -2290,46 +2269,41 @@ static int netvsc_vf_up(struct net_device *vf_netdev)
 	return NOTIFY_OK;
 }
 
-static int netvsc_vf_down(struct net_device *vf_netdev, bool rndis_close)
+static int netvsc_vf_down(struct net_device *vf_netdev)
 {
-	struct net_device *ndev;
-	struct netvsc_device *netvsc_dev;
-	struct net_device_context *net_device_ctx;
+        struct net_device_context *net_device_ctx;
+        struct netvsc_device *netvsc_dev;
+        struct net_device *ndev;
 
-	ndev = get_netvsc_byref(vf_netdev);
-	if (!ndev)
-		return NOTIFY_DONE;
+        ndev = get_netvsc_byref(vf_netdev);
+        if (!ndev)
+                return NOTIFY_DONE;
 
-	net_device_ctx = netdev_priv(ndev);
-	netvsc_dev = net_device_ctx->nvdev;
+        net_device_ctx = netdev_priv(ndev);
+        netvsc_dev = rtnl_dereference(net_device_ctx->nvdev);
+        if (!netvsc_dev)
+                return NOTIFY_DONE;
 
-	if (!netvsc_dev)
-		return NOTIFY_DONE;
+        netvsc_switch_datapath(ndev, false);
+        netdev_info(ndev, "Data path switched from VF: %s\n", vf_netdev->name);
+        rndis_filter_close(netvsc_dev);
 
-	netdev_info(ndev, "VF down: %s\n", vf_netdev->name);
-	netvsc_inject_disable(net_device_ctx);
-	netvsc_switch_datapath(ndev, false);
-	netdev_info(ndev, "Data path switched from VF: %s\n", vf_netdev->name);
-	net_device_ctx->synthetic_data_path = true;
-	if (rndis_close)
-		rndis_filter_close(netvsc_dev);
-	netif_carrier_on(ndev);
-
-#if (RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6,2))
-	/*
-	 * Notify peers.
+	#if (RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6,2))
+        /*
+	 *          * Notify peers.
 	 */
-	atomic_inc(&net_device_ctx->vf_use_cnt);
-	net_device_ctx->gwrk.netdev = ndev;
-	net_device_ctx->gwrk.net_device_ctx = net_device_ctx;
-	schedule_work(&net_device_ctx->gwrk.dwrk);
-#else
-	/* Now notify peers through netvsc device. */
-	call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, ndev);
-#endif
+       		atomic_inc(&net_device_ctx->vf_use_cnt);
+	        net_device_ctx->gwrk.netdev = ndev;
+	        net_device_ctx->gwrk.net_device_ctx = net_device_ctx;
+	        schedule_work(&net_device_ctx->gwrk.dwrk);
+	#else
+        	/* Now notify peers through netvsc device. */
+	        call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, ndev);
+	#endif
 
-	return NOTIFY_OK;
+        return NOTIFY_OK;
 }
+
 
 static int netvsc_unregister_vf(struct net_device *vf_netdev)
 {
