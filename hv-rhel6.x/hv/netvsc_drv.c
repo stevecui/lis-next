@@ -2122,7 +2122,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 			   ret);
 		goto rx_handler_failed;
 	}
-
+#if 0
 	ret = netdev_master_upper_dev_link(vf_netdev, ndev);
 
 	if (ret != 0) {
@@ -2131,7 +2131,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 			   ndev->name, ret);
 		goto upper_link_failed;
 	}
-
+#endif
 	/* set slave flag before open to prevent IPv6 addrconf */
 	vf_netdev->flags |= IFF_SLAVE;
 
