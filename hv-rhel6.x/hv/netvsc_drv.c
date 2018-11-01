@@ -1948,28 +1948,28 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 
 		/* set allmulti level to new slave */
 		if (bond_dev->flags & IFF_ALLMULTI) {
-
+			printk("bd_e_2\n");
 			res = dev_set_allmulti(slave_dev, 1);
 			if (res)
 				goto err_close;
 		}
-
+		printk("bd_e_3\n");
 
 		netif_addr_lock_bh(bond_dev);
 		/* upload master's mc_list to new slave */
 		for (dmi = bond_dev->mc_list; dmi; dmi = dmi->next)
 		{	
-
+		    printk("bd_e_4\n");
 		    dev_mc_add(slave_dev, dmi->dmi_addr,
 				   dmi->dmi_addrlen, 0);
 		}
-
+		printk("bd_e_5\n");
 		netif_addr_unlock_bh(bond_dev);
 	}
-
+	printk("bd_f\n");
 
 	bond_add_vlans_on_slave(bond, slave_dev);
-
+	printk("bd_10\n");
 
 	prev_slave = bond_last_slave(bond);
 
@@ -1983,12 +1983,12 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	
 	for (i = 0; i < BOND_MAX_ARP_TARGETS; i++)
 	{
-
+	    printk("bd_10_0\n");
 	    new_slave->target_last_arp_rx[i] = new_slave->last_rx;
 	}
 
 	if (bond->params.miimon && !bond->params.use_carrier) {
-
+        printk("bd_10_1\n");
 		link_reporting = bond_check_dev_link(bond, slave_dev, 1);
 
 		if ((link_reporting == -1) && !bond->params.arp_interval) {
@@ -2008,21 +2008,21 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 				    slave_dev->name);
 		}
 	}
-
+	printk("bd_11\n");
 
 	/* check for initial state */
 	if (bond->params.miimon) {
-
+		printk("bd_11_0\n");
 
 	} else if (bond->params.arp_interval) {
-
+	    printk("bd_11_0_0\n");
 		new_slave->link = (netif_carrier_ok(slave_dev) ?
 			BOND_LINK_UP : BOND_LINK_DOWN);
 	} else {
-
+  	    printk("bd_11_0_0\n");
 		new_slave->link = BOND_LINK_UP;
 	}
-
+	printk("bd_12\n");
 
 	if (new_slave->link != BOND_LINK_DOWN)
 		new_slave->last_link_up = jiffies;
@@ -2030,10 +2030,24 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		   new_slave->link == BOND_LINK_DOWN ? "DOWN" :
 		   (new_slave->link == BOND_LINK_UP ? "UP" : "BACK"));
 
+	if (bond_uses_primary(bond) && bond->params.primary[0]) {
+		printk("bd_12_0\n");
+
+	}
+	printk("bd_13\n");
 	(bond)->params.mode = BOND_MODE_ACTIVEBACKUP;
 
-	bond_set_slave_inactive_flags(new_slave,
+	switch (BOND_MODE(bond)) {
+	case BOND_MODE_ACTIVEBACKUP:
+		bond_set_slave_inactive_flags(new_slave,
 					      BOND_SLAVE_NOTIFY_NOW);
+		printk("bd_13_0\n");
+		break;
+	default:
+		printk("bd_13_3\n");
+
+		break;
+	} /* switch(bond_mode) */
 
 #ifdef CONFIG_NET_POLL_CONTROLLER
 	slave_dev->npinfo = bond->dev->npinfo;
@@ -2044,6 +2058,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 			goto err_detach;
 		}
 	}
+	printk("bd_13_4\n");
 #endif
 
 	res = netvsc_bond_create_slave_symlinks(bond_dev, slave_dev);
