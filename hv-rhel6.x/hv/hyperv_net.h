@@ -890,7 +890,7 @@ struct net_device_context {
 
 	u32 tx_checksum_mask;
 
-	u32 tx_send_table[VRSS_SEND_TAB_SIZE];
+	u32 tx_table[VRSS_SEND_TAB_SIZE];
 
 	/* Ethtool settings */
 	u8 duplex;
@@ -901,12 +901,14 @@ struct net_device_context {
 	struct net_device *vf_netdev;
 	bool vf_inject;
 	atomic_t vf_use_cnt;
+
+	struct netvsc_vf_pcpu_stats __percpu *vf_stats;
+	struct work_struct vf_takeover;
+
 	/* 1: allocated, serial number is valid. 0: not allocated */
 	u32 vf_alloc;
 	/* Serial number of the VF to team with */
 	u32 vf_serial;
-
-	bool datapath;	/* 0 - synthetic, 1 - VF nic */
 
 	/*
 	 * Tracks the current data path; initially the data path is set
