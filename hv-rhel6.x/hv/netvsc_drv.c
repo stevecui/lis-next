@@ -2104,8 +2104,6 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 			  struct net_device *ndev)
 {
 	struct net_device_context *ndev_ctx = netdev_priv(ndev);
-	struct bonding *bond_dev = netdev_priv(ndev) + ALIGN(sizeof(struct net_device_context), \
-		                           NETDEV_ALIGN);
 	int ret;
 
 	ret = netvsc_bond_enslave(ndev, vf_netdev);
@@ -2140,7 +2138,8 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	schedule_work(&ndev_ctx->vf_takeover);
 
 	netdev_info(vf_netdev, "joined to %s\n", ndev->name);
-	return 0;
+	printk("here,ret:%d\n",ret);
+        return 0;
 
 upper_link_failed:
 
@@ -2212,7 +2211,7 @@ static int netvsc_register_vf(struct net_device *vf_netdev)
 
 	net_device_ctx = netdev_priv(ndev);
 	netvsc_dev = net_device_ctx->nvdev;
-    bond_dev = netdev_priv(ndev) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
+        bond_dev = netdev_priv(ndev) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
 	if (!netvsc_dev || net_device_ctx->vf_netdev)
 		return NOTIFY_DONE;
 	net_device_ctx->vf_netdev = vf_netdev;
@@ -2228,8 +2227,6 @@ static int netvsc_register_vf(struct net_device *vf_netdev)
 
 	dev_hold(vf_netdev);
 	net_device_ctx->vf_netdev = vf_netdev;
-	printk("end:vf_rg:vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
-		printk("end:vf_rg:vf_extend->dev:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->dev));
 	return NOTIFY_OK;
 }
 
@@ -2252,40 +2249,28 @@ static int netvsc_vf_up(struct net_device *vf_netdev)
 	struct net_device *ndev;
 	struct netvsc_device *netvsc_dev;
 	struct net_device_context *net_device_ctx;
-    printk("up_0\n");
+
 	ndev = get_netvsc_byref(vf_netdev);
-	printk("up_1\n");
 
 	if (!ndev)
-	{
-    	printk("up_2\n");
 		return NOTIFY_DONE;
-	}
 
 	net_device_ctx = netdev_priv(ndev);
-	printk("up_3\n");
 	netvsc_dev = rtnl_dereference(net_device_ctx->nvdev);
-	printk("up_4\n");
+
 	if (!netvsc_dev)
-	{
-	    printk("up_5\n");
 		return NOTIFY_DONE;
-    }
 	netdev_info(ndev, "VF up: %s\n", vf_netdev->name);
 	netvsc_inject_enable(net_device_ctx);
-    printk("up_6\n");
 	/*
 	 * Open the device before switching data path.
 	 */
 	rndis_filter_open(netvsc_dev);
-	printk("up_7\n");
 
 	/* notify the host to switch the data path. */
 	netvsc_switch_datapath(ndev, true);
-	printk("up_8\n");
 	net_device_ctx->synthetic_data_path = false;
 	netdev_info(ndev, "Data path switched to VF: %s\n", vf_netdev->name);
-printk("up_9:vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
 	netif_carrier_off(ndev);
 
 #if (RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6,2))
@@ -2376,7 +2361,7 @@ static int netvsc_probe(struct hv_device *dev,
 	unsigned int size_all;
 	int ret = -ENOMEM;
 
-    size_all = ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN)+ \
+        size_all = ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN)+ \
 		           ALIGN(sizeof(struct bonding), NETDEV_ALIGN);
 
 	net = alloc_etherdev_mq(size_all,
@@ -2473,7 +2458,7 @@ rndis_failed:
 no_stats:
 	hv_set_drvdata(dev, NULL);
 	free_netdev(net);
-no_net:
+
 	return ret;
 }
 
@@ -2544,44 +2529,30 @@ static int netvsc_netdev_event(struct notifier_block *this,
 #else
 	struct net_device *event_dev = ptr;
 #endif
-    printk("aabb:event_dev:%lx,event:%d\n",(uintptr_t)event_dev,event);
 	/* Skip our own events */
 	if (event_dev->netdev_ops == &device_ops)
-	{
-	    printk("aabb_0\n");
 	    return NOTIFY_DONE;
-	}
 
 	/* Avoid non-Ethernet type devices */
 	if (event_dev->type != ARPHRD_ETHER)
-	{	printk("aabb_1\n");
 	    return NOTIFY_DONE;
-	}
 
 	/* Avoid Vlan dev with same MAC registering as VF */
 	if (is_vlan_dev(event_dev))
-	{	printk("aabb_2\n");
 	    return NOTIFY_DONE;
-	}
 
 	/* Avoid Bonding master dev with same MAC registering as VF */
 	if ((event_dev->priv_flags & IFF_BONDING) &&
 	    (event_dev->flags & IFF_MASTER))
-	{	printk("aabb_3\n");
 	    return NOTIFY_DONE;
-	}
 	switch (event) {
 	case NETDEV_REGISTER:
-		printk("aabb_4\n");
 		return netvsc_register_vf(event_dev);
 	case NETDEV_UNREGISTER:
-		printk("aabb_5\n");
 		return netvsc_unregister_vf(event_dev);
 	case NETDEV_UP:
-		printk("aabb_6\n");
 		return netvsc_vf_up(event_dev);
 	case NETDEV_DOWN:
-		printk("aabb_7\n");
 		return netvsc_vf_down(event_dev);
 	default:
 		return NOTIFY_DONE;
@@ -2609,7 +2580,6 @@ static int __init netvsc_drv_init(void)
 			ring_size);
 	}
 	ret = vmbus_driver_register(&netvsc_drv);
-    printk("drv_init\n");
 	if (ret)
 		return ret;
 
