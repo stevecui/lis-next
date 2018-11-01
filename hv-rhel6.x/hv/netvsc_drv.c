@@ -2114,7 +2114,6 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	schedule_work(&ndev_ctx->vf_takeover);
 
 	netdev_info(vf_netdev, "joined to %s\n", ndev->name);
-	return 0;
 
 upper_link_failed:
 
