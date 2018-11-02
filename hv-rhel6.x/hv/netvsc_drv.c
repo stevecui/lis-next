@@ -220,13 +220,7 @@ static inline int netvsc_get_tx_queue(struct net_device *ndev,
 }
 #endif
 
-#ifdef NOTYET
-// Divergence from upstream commit:
-// 5b54dac856cb5bd6f33f4159012773e4a33704f7
-static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb,
-			void *accel_priv, select_queue_fallback_t fallback)
-#endif
-static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
+static u16 netvsc_pick_tx(struct net_device *ndev, struct sk_buff *skb)
 {
 	struct net_device_context *net_device_ctx = netdev_priv(ndev);
 	u32 hash;
@@ -235,12 +229,46 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 	if (ndev->real_num_tx_queues <= 1)
 		return 0;
 
-	hash = skb_get_hash(skb);
-	q_idx = net_device_ctx->tx_table[hash % VRSS_SEND_TAB_SIZE] %
-		ndev->real_num_tx_queues;
+	if (netvsc_set_hash(&hash, skb)) {
+		q_idx = net_device_ctx->tx_table[hash % VRSS_SEND_TAB_SIZE] %
+			ndev->real_num_tx_queues;
+		skb_set_hash(skb, hash, PKT_HASH_TYPE_L3);
+	}
 
 	return q_idx;
 }
+
+
+#ifdef NOTYET
+// Divergence from upstream commit:
+// 5b54dac856cb5bd6f33f4159012773e4a33704f7
+static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb,
+			       void *accel_priv,
+			       select_queue_fallback_t fallback)
+#endif
+static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
+
+{
+	struct net_device_context *ndc = netdev_priv(ndev);
+	struct net_device *vf_netdev;
+	u16 txq;
+
+	rcu_read_lock();
+	vf_netdev = rcu_dereference(ndc->vf_netdev);
+	if (vf_netdev) {
+		txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) : 0;
+		qdisc_skb_cb(skb)->slave_dev_queue_mapping = skb->queue_mapping;
+	} else {
+		txq = netvsc_pick_tx(ndev, skb);
+	}
+	rcu_read_unlock();
+
+	while (unlikely(txq >= ndev->real_num_tx_queues))
+		txq -= ndev->real_num_tx_queues;
+
+	return txq;
+}
+
 
 static u32 fill_pg_buf(struct page *page, u32 offset, u32 len,
 			struct hv_page_buffer *pb)
