@@ -1770,7 +1770,7 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 	struct net_device_context *ndev_ctx = netdev_priv(ndev);
 	struct netvsc_vf_pcpu_stats *pcpu_stats
 		 = this_cpu_ptr(ndev_ctx->vf_stats);
-printk("rx\n");
+printk("rx:skb->dev->master:%lx\n",(uintptr_t)skb->dev->master);
 	skb->dev = ndev;
 	u64_stats_update_begin(&pcpu_stats->syncp);
 	pcpu_stats->rx_packets++;
@@ -2150,7 +2150,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 			   ret);
 		goto rx_handler_failed;
 	}
-#if 0
+#if 1
 	ret = netdev_master_upper_dev_link(vf_netdev, ndev);
 
 	if (ret != 0) {
@@ -2375,6 +2375,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
+dev_put(vf_netdev);
 	module_put(THIS_MODULE);
 	return NOTIFY_OK;
 }
