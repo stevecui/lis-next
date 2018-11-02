@@ -113,7 +113,7 @@ static int netvsc_open(struct net_device *net)
 				    vf_netdev->name, ret);
 	}
 
-	return 0;
+	return ret;
 
 }
 
@@ -2405,7 +2405,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
-dev_put(vf_netdev);
+//dev_put(vf_netdev);
 	module_put(THIS_MODULE);
 	return NOTIFY_OK;
 }
