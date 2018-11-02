@@ -113,7 +113,7 @@ static int netvsc_open(struct net_device *net)
 				    vf_netdev->name, ret);
 	}
 
-	return ret;
+	return 0;
 
 }
 
