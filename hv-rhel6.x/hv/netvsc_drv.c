@@ -2329,7 +2329,7 @@ static int netvsc_vf_down(struct net_device *vf_netdev)
 	        schedule_work(&net_device_ctx->gwrk.dwrk);
 	#else
         	/* Now notify peers through netvsc device. */
-	        call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, ndev);
+	        //call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, ndev);
 	#endif
 
         return NOTIFY_OK;
