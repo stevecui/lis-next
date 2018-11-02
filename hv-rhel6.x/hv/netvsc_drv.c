@@ -2308,44 +2308,37 @@ static int netvsc_vf_up(struct net_device *vf_netdev)
 	struct net_device *ndev;
 	struct netvsc_device *netvsc_dev;
 	struct net_device_context *net_device_ctx;
-
+    printk("up_0\n");
 	ndev = get_netvsc_byref(vf_netdev);
+	printk("up_1\n");
 
 	if (!ndev)
+	{
+    	printk("up_2\n");
 		return NOTIFY_DONE;
+	}
 
 	net_device_ctx = netdev_priv(ndev);
+	printk("up_3\n");
 	netvsc_dev = rtnl_dereference(net_device_ctx->nvdev);
-
+	printk("up_4\n");
 	if (!netvsc_dev)
+	{
+	    printk("up_5\n");
 		return NOTIFY_DONE;
-	netdev_info(ndev, "VF up: %s\n", vf_netdev->name);
-	netvsc_inject_enable(net_device_ctx);
-	/*
-	 * Open the device before switching data path.
-	 */
+	}
+	printk("up_6\n");
+
+	/* Bump refcount when datapath is acvive - Why? */
 	rndis_filter_open(netvsc_dev);
+	printk("up_7\n");
 
 	/* notify the host to switch the data path. */
 	netvsc_switch_datapath(ndev, true);
-	net_device_ctx->synthetic_data_path = false;
+	printk("up_8\n");
 	netdev_info(ndev, "Data path switched to VF: %s\n", vf_netdev->name);
-	netif_carrier_off(ndev);
+	printk("up_9:vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
 
-#if (RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6,2))
-	/*
-	 * Now notify peers. We are scheduling work to
-	 * notify peers; take a reference to prevent
-	 * the VF interface from vanishing.
-	 */
-	atomic_inc(&net_device_ctx->vf_use_cnt);
-	net_device_ctx->gwrk.netdev = vf_netdev;
-	net_device_ctx->gwrk.net_device_ctx = net_device_ctx;
-	schedule_work(&net_device_ctx->gwrk.dwrk);
-#else
-	/* Now notify peers through VF device. */
-	call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, vf_netdev);
-#endif
 	return NOTIFY_OK;
 }
 
@@ -2380,6 +2373,7 @@ static int netvsc_vf_down(struct net_device *vf_netdev)
         	/* Now notify peers through netvsc device. */
 	        //call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, ndev);
 	#endif
+        return NOTIFY_OK;
 
         return NOTIFY_OK;
 }
