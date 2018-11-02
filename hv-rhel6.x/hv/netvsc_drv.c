@@ -2115,9 +2115,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 
 	netdev_info(vf_netdev, "joined to %s\n", ndev->name);
 
-    return 0;
-
-upper_link_failed:
+        return 0;
 
 rx_handler_failed:
 
