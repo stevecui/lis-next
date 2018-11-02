@@ -1565,7 +1565,7 @@ static struct net_device *get_netvsc_byref(const struct net_device *vf_netdev)
  *
  * Should be called with RTNL held.
  */
-static void bond_add_vlans_on_slave(struct bonding *bond, struct net_device *slave_dev)
+static void netvsc_bond_add_vlans_on_slave(struct bonding *bond, struct net_device *slave_dev)
 {
 	struct vlan_entry *vlan;
 	const struct net_device_ops *slave_ops = slave_dev->netdev_ops;
@@ -1590,7 +1590,7 @@ static void bond_add_vlans_on_slave(struct bonding *bond, struct net_device *sla
  * values are invalid, set speed and duplex to -1,
  * and return.
  */
-static void bond_update_speed_duplex(struct slave *slave)
+static void netvsc_bond_update_speed_duplex(struct slave *slave)
 {
 	struct net_device *slave_dev = slave->dev;
 	struct ethtool_cmd etool = { .cmd = ETHTOOL_GSET };
@@ -1641,7 +1641,7 @@ static void bond_update_speed_duplex(struct slave *slave)
  * It'd be nice if there was a good way to tell if a driver supports
  * netif_carrier, but there really isn't.
  */
-static int bond_check_dev_link(struct bonding *bond,
+static int netvsc_bond_check_dev_link(struct bonding *bond,
 			       struct net_device *slave_dev, int reporting)
 {
 	const struct net_device_ops *slave_ops = slave_dev->netdev_ops;
@@ -1716,7 +1716,7 @@ out:
 }
 #endif
 
-static int bond_master_upper_dev_link(struct net_device *bond_dev,
+static int netvsc_bond_master_upper_dev_link(struct net_device *bond_dev,
 				      struct net_device *slave_dev,
 				      struct slave *slave)
 {
@@ -1732,7 +1732,7 @@ static int bond_master_upper_dev_link(struct net_device *bond_dev,
 				 NETIF_F_FRAGLIST | NETIF_F_ALL_TSO | \
 				 NETIF_F_HIGHDMA | NETIF_F_LRO)
 
-static struct slave *bond_alloc_slave(struct bonding *bond)
+static struct slave *netvsc_bond_alloc_slave(struct bonding *bond)
 {
 	struct slave *slave = NULL;
 
@@ -1768,19 +1768,8 @@ int netvsc_bond_create_slave_symlinks(struct net_device *master,
 }
 
 
-static inline void tlb_init_slave(struct slave *slave)
-{
-	SLAVE_TLB_INFO(slave).load = 0;
-	SLAVE_TLB_INFO(slave).head = TLB_NULL_INDEX;
-}
 
-static int netdev_master_upper_dev_link(struct net_device *vf_netdev,
-                                      struct net_device *ndev)
-{
-        int err;
-        err = netdev_set_master(vf_netdev,ndev);
-        return err;
-}
+
 
 
 static void netdev_upper_dev_unlink(struct net_device *vf_netdev,
@@ -1924,7 +1913,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 
 		printk("bd_8_0\n");
 	}
-	new_slave = bond_alloc_slave(bond);
+	new_slave = netvsc_bond_alloc_slave(bond);
 	if (!new_slave) {
 		res = -ENOMEM;
 		goto err_undo_flags;
@@ -2025,7 +2014,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	}
 	printk("bd_f\n");
 
-	bond_add_vlans_on_slave(bond, slave_dev);
+	netvsc_bond_add_vlans_on_slave(bond, slave_dev);
 	printk("bd_10\n");
 
 	prev_slave = bond_last_slave(bond);
@@ -2033,7 +2022,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	new_slave->delay = 0;
 	new_slave->link_failure_count = 0;
 
-	bond_update_speed_duplex(new_slave);
+	netvsc_bond_update_speed_duplex(new_slave);
 
 	new_slave->last_rx = jiffies -
 		(msecs_to_jiffies(bond->params.arp_interval) + 1);
@@ -2046,7 +2035,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 
 	if (bond->params.miimon && !bond->params.use_carrier) {
         printk("bd_10_1\n");
-		link_reporting = bond_check_dev_link(bond, slave_dev, 1);
+		link_reporting = netvsc_bond_check_dev_link(bond, slave_dev, 1);
 
 		if ((link_reporting == -1) && !bond->params.arp_interval) {
 			/* miimon is set but a bonded network driver
@@ -2132,7 +2121,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		goto err_dest_symlinks;
 	}
 
-	res = bond_master_upper_dev_link(bond_dev, slave_dev, new_slave);
+	res = netvsc_bond_master_upper_dev_link(bond_dev, slave_dev, new_slave);
 
 	if (res) {
 		netdev_dbg(bond_dev, "Error %d calling bond_master_upper_dev_link\n", res);
@@ -2180,16 +2169,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 			   ret);
 		goto rx_handler_failed;
 	}
-#if 0
-	ret = netdev_master_upper_dev_link(vf_netdev, ndev);
 
-	if (ret != 0) {
-		netdev_err(vf_netdev,
-			   "can not set master device %s (err = %d)\n",
-			   ndev->name, ret);
-		goto upper_link_failed;
-	}
-#endif
 	/* set slave flag before open to prevent IPv6 addrconf */
 	vf_netdev->flags |= IFF_SLAVE;
 
