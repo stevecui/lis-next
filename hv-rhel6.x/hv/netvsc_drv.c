@@ -1790,23 +1790,27 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	struct sockaddr addr;
 	int link_reporting;
 	int res = 0, i;
+    printk("bd_0\n");
 	if (!bond->params.use_carrier &&
 	    slave_dev->ethtool_ops->get_link == NULL &&
 	    slave_ops->ndo_do_ioctl == NULL) {
 		netdev_warn(bond_dev, "no link monitoring support for %s\n",
 			    slave_dev->name);
 	}
+	printk("bd_1\n");
 
 	/* already enslaved */
 	if (slave_dev->flags & IFF_SLAVE) {
 		netdev_dbg(bond_dev, "Error: Device was already enslaved\n");
 		return -EBUSY;
 	}
+	printk("bd_2\n");
 
 	if (bond_dev == slave_dev) {
 		netdev_err(bond_dev, "cannot enslave bond to itself.\n");
 		return -EPERM;
 	}
+	printk("bd_3\n");
 
 	/* vlan challenged mutual exclusion */
 	/* no need to lock since we're protected by rtnl_lock */
@@ -1826,6 +1830,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		netdev_dbg(bond_dev, "%s is !NETIF_F_VLAN_CHALLENGED\n",
 			   slave_dev->name);
 	}
+	printk("bd_4\n");
 
 	/* Old ifenslave binaries are no longer supported.  These can
 	 * be identified with moderate accuracy by the state of the slave:
@@ -1838,6 +1843,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		res = -EPERM;
 		goto err_undo_flags;
 	}
+	printk("bd_5\n");
 
 	/* set bonding device ether type by slave - bonding netdevices are
 	 * created with ether_setup, so when the slave type is not ARPHRD_ETHER
@@ -1847,6 +1853,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	 * ether type (eg ARPHRD_ETHER and ARPHRD_INFINIBAND) share the same bond
 	 */
 	if (!bond_has_slaves(bond)) {
+	printk("bd_5_0\n");
 		res = -EBUSY;
 		goto err_undo_flags;
 	} else if (bond_dev->type != slave_dev->type) {
@@ -1855,8 +1862,10 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		res = -EINVAL;
 		goto err_undo_flags;
 	}
+	printk("bd_6\n");
 
 	if (slave_ops->ndo_set_mac_address == NULL) {
+		printk("bd_6_0\n");
 
 		netdev_warn(bond_dev, "The slave device specified does not support setting the MAC address\n");
 		if (BOND_MODE(bond) == BOND_MODE_ACTIVEBACKUP &&
@@ -1871,8 +1880,10 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 			}
 		}
 	}
+	printk("bd_7\n");
 
 	call_netdevice_notifiers(NETDEV_JOIN, slave_dev);
+	printk("bd_8\n");
 
  	/* If this is the first slave, then we need to set the master's hardware
  	 * address to be the same as the slave's.
@@ -1888,6 +1899,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		res = -ENOMEM;
 		goto err_undo_flags;
 	}
+	printk("bd_9\n");
 
 	new_slave->bond = bond;
 	new_slave->dev = slave_dev;
@@ -1903,12 +1915,14 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		netdev_dbg(bond_dev, "Error %d calling dev_set_mtu\n", res);
 		goto err_free;
 	}
+	printk("bd_a\n");
 
 	/* Save slave's original ("permanent") mac address for modes
 	 * that need it, and for restoring it upon release, and then
 	 * set it to the master's address
 	 */
 	memcpy(new_slave->perm_hwaddr, slave_dev->dev_addr, ETH_ALEN);
+	printk("bd_b\n");
 
 	if (!bond->params.fail_over_mac ||
 	    BOND_MODE(bond) != BOND_MODE_ACTIVEBACKUP) {
@@ -1916,6 +1930,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		 * set the master's mac address to that of the first slave
 		 */
 		 
+		printk("bd_b_0\n");
 		memcpy(addr.sa_data, bond_dev->dev_addr, bond_dev->addr_len);
 		addr.sa_family = slave_dev->type;
 		res = dev_set_mac_address(slave_dev, &addr);
@@ -1927,6 +1942,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 
 	/* set slave flag before open to prevent IPv6 addrconf */
 	slave_dev->flags |= IFF_SLAVE;
+	printk("bd_c\n");
 
 	/* open the slave since the application closed it */
 	res = dev_open(slave_dev);
@@ -1938,7 +1954,9 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	slave_dev->priv_flags |= IFF_BONDING;
 	/* initialize slave stats */
 	dev_get_stats64(new_slave->dev, &new_slave->slave_stats);
+	printk("bd_d\n");
 
+	printk("bd_e\n");
 
 	/* If the mode uses primary, then the new slave gets the
 	 * master's promisc (and mc) settings only if it becomes the
@@ -1946,10 +1964,10 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	 * bond_change_active()
 	 */
 	if (!bond_uses_primary(bond)) {
-
+		printk("bd_e_0\n");
 		/* set promiscuity level to new slave */
 		if (bond_dev->flags & IFF_PROMISC) {
-
+			printk("bd_e_1\n");
 			res = dev_set_promiscuity(slave_dev, 1);
 			if (res)
 				goto err_close;
@@ -2377,7 +2395,7 @@ static int netvsc_probe(struct hv_device *dev,
 	net = alloc_etherdev_mq(size_all,
 				VRSS_CHANNEL_MAX);
 	if (!net)
-		return -ENOMEM;
+		goto no_net;
 
 	netif_carrier_off(net);
 
@@ -2468,7 +2486,7 @@ rndis_failed:
 no_stats:
 	hv_set_drvdata(dev, NULL);
 	free_netdev(net);
-
+no_net:
 	return ret;
 }
 
@@ -2539,30 +2557,44 @@ static int netvsc_netdev_event(struct notifier_block *this,
 #else
 	struct net_device *event_dev = ptr;
 #endif
+    printk("aabb:event_dev:%lx,event:%d\n",(uintptr_t)event_dev,event);
 	/* Skip our own events */
 	if (event_dev->netdev_ops == &device_ops)
+	{
+	    printk("aabb_0\n");
 	    return NOTIFY_DONE;
+	}
 
 	/* Avoid non-Ethernet type devices */
 	if (event_dev->type != ARPHRD_ETHER)
+	{	printk("aabb_1\n");
 	    return NOTIFY_DONE;
+	}
 
 	/* Avoid Vlan dev with same MAC registering as VF */
 	if (is_vlan_dev(event_dev))
+	{	printk("aabb_2\n");
 	    return NOTIFY_DONE;
+	}
 
 	/* Avoid Bonding master dev with same MAC registering as VF */
 	if ((event_dev->priv_flags & IFF_BONDING) &&
 	    (event_dev->flags & IFF_MASTER))
+	{	printk("aabb_3\n");
 	    return NOTIFY_DONE;
+	}
 	switch (event) {
 	case NETDEV_REGISTER:
+		printk("aabb_4\n");
 		return netvsc_register_vf(event_dev);
 	case NETDEV_UNREGISTER:
+		printk("aabb_5\n");
 		return netvsc_unregister_vf(event_dev);
 	case NETDEV_UP:
+		printk("aabb_6\n");
 		return netvsc_vf_up(event_dev);
 	case NETDEV_DOWN:
+		printk("aabb_7\n");
 		return netvsc_vf_down(event_dev);
 	default:
 		return NOTIFY_DONE;
