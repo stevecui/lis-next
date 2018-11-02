@@ -112,7 +112,9 @@ static int netvsc_open(struct net_device *net)
 				    "unable to open slave: %s: %d\n",
 				    vf_netdev->name, ret);
 	}
-	return ret;
+
+	return 0;
+
 }
 
 static int netvsc_close(struct net_device *net)
