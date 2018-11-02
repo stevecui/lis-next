@@ -2132,6 +2132,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 {
 	struct net_device_context *ndev_ctx = netdev_priv(ndev);
 	int ret;
+	printk("vf_netdev:%lx,vf->flags:%x,ndev:%lx,ndev->flags:%x\n",(uintptr_t)(vf_netdev),vf_netdev->flags,(uintptr_t)(ndev),ndev->flags);
 
 	ret = netvsc_bond_enslave(ndev, vf_netdev);
     rcu_assign_pointer(netdev_extended(vf_netdev)->dev, vf_netdev);
