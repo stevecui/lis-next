@@ -1874,6 +1874,15 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 
 	call_netdevice_notifiers(NETDEV_JOIN, slave_dev);
 
+ 	/* If this is the first slave, then we need to set the master's hardware
+ 	 * address to be the same as the slave's.
+ 	 */  //bond_has_slaves returning 0 means empty
+	if (!bond_has_slaves(bond) &&
+	    bond->dev->addr_assign_type == NET_ADDR_RANDOM)
+	{
+
+		printk("bd_8_0\n");
+	}
 	new_slave = bond_alloc_slave(bond);
 	if (!new_slave) {
 		res = -ENOMEM;
