@@ -2180,7 +2180,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 			   ret);
 		goto rx_handler_failed;
 	}
-#if 1
+#if 0
 	ret = netdev_master_upper_dev_link(vf_netdev, ndev);
 
 	if (ret != 0) {
