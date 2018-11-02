@@ -1789,7 +1789,7 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 	struct net_device_context *ndev_ctx = netdev_priv(ndev);
 	struct netvsc_vf_pcpu_stats *pcpu_stats
 		 = this_cpu_ptr(ndev_ctx->vf_stats);
-printk("rx:skb->dev->master:%lx\n",(uintptr_t)skb->dev->master);
+
 	skb->dev = ndev;
 	u64_stats_update_begin(&pcpu_stats->syncp);
 	pcpu_stats->rx_packets++;
@@ -1809,27 +1809,24 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	struct sockaddr addr;
 	int link_reporting;
 	int res = 0, i;
-    printk("bd_0\n");
+
 	if (!bond->params.use_carrier &&
 	    slave_dev->ethtool_ops->get_link == NULL &&
 	    slave_ops->ndo_do_ioctl == NULL) {
 		netdev_warn(bond_dev, "no link monitoring support for %s\n",
 			    slave_dev->name);
 	}
-	printk("bd_1\n");
 
 	/* already enslaved */
 	if (slave_dev->flags & IFF_SLAVE) {
 		netdev_dbg(bond_dev, "Error: Device was already enslaved\n");
 		return -EBUSY;
 	}
-	printk("bd_2\n");
 
 	if (bond_dev == slave_dev) {
 		netdev_err(bond_dev, "cannot enslave bond to itself.\n");
 		return -EPERM;
 	}
-	printk("bd_3\n");
 
 	/* vlan challenged mutual exclusion */
 	/* no need to lock since we're protected by rtnl_lock */
@@ -1849,7 +1846,6 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		netdev_dbg(bond_dev, "%s is !NETIF_F_VLAN_CHALLENGED\n",
 			   slave_dev->name);
 	}
-	printk("bd_4\n");
 
 	/* Old ifenslave binaries are no longer supported.  These can
 	 * be identified with moderate accuracy by the state of the slave:
@@ -1862,7 +1858,6 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		res = -EPERM;
 		goto err_undo_flags;
 	}
-	printk("bd_5\n");
 
 	/* set bonding device ether type by slave - bonding netdevices are
 	 * created with ether_setup, so when the slave type is not ARPHRD_ETHER
@@ -1872,7 +1867,6 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	 * ether type (eg ARPHRD_ETHER and ARPHRD_INFINIBAND) share the same bond
 	 */
 	if (!bond_has_slaves(bond)) {
-	printk("bd_5_0\n");
 		res = -EBUSY;
 		goto err_undo_flags;
 	} else if (bond_dev->type != slave_dev->type) {
@@ -1881,11 +1875,8 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		res = -EINVAL;
 		goto err_undo_flags;
 	}
-	printk("bd_6\n");
 
 	if (slave_ops->ndo_set_mac_address == NULL) {
-		printk("bd_6_0\n");
-
 		netdev_warn(bond_dev, "The slave device specified does not support setting the MAC address\n");
 		if (BOND_MODE(bond) == BOND_MODE_ACTIVEBACKUP &&
 		    bond->params.fail_over_mac != BOND_FOM_ACTIVE) {
@@ -1899,26 +1890,14 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 			}
 		}
 	}
-	printk("bd_7\n");
 
 	call_netdevice_notifiers(NETDEV_JOIN, slave_dev);
-	printk("bd_8\n");
 
- 	/* If this is the first slave, then we need to set the master's hardware
- 	 * address to be the same as the slave's.
- 	 */  //bond_has_slaves returning 0 means empty
-	if (!bond_has_slaves(bond) &&
-	    bond->dev->addr_assign_type == NET_ADDR_RANDOM)
-	{
-
-		printk("bd_8_0\n");
-	}
 	new_slave = netvsc_bond_alloc_slave(bond);
 	if (!new_slave) {
 		res = -ENOMEM;
 		goto err_undo_flags;
 	}
-	printk("bd_9\n");
 
 	new_slave->bond = bond;
 	new_slave->dev = slave_dev;
@@ -1934,14 +1913,12 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		netdev_dbg(bond_dev, "Error %d calling dev_set_mtu\n", res);
 		goto err_free;
 	}
-	printk("bd_a\n");
 
 	/* Save slave's original ("permanent") mac address for modes
 	 * that need it, and for restoring it upon release, and then
 	 * set it to the master's address
 	 */
 	memcpy(new_slave->perm_hwaddr, slave_dev->dev_addr, ETH_ALEN);
-	printk("bd_b\n");
 
 	if (!bond->params.fail_over_mac ||
 	    BOND_MODE(bond) != BOND_MODE_ACTIVEBACKUP) {
@@ -1949,7 +1926,6 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		 * set the master's mac address to that of the first slave
 		 */
 		 
-		printk("bd_b_0\n");
 		memcpy(addr.sa_data, bond_dev->dev_addr, bond_dev->addr_len);
 		addr.sa_family = slave_dev->type;
 		res = dev_set_mac_address(slave_dev, &addr);
@@ -1961,7 +1937,6 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 
 	/* set slave flag before open to prevent IPv6 addrconf */
 	slave_dev->flags |= IFF_SLAVE;
-	printk("bd_c\n");
 
 	/* open the slave since the application closed it */
 	res = dev_open(slave_dev);
@@ -1973,9 +1948,6 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	slave_dev->priv_flags |= IFF_BONDING;
 	/* initialize slave stats */
 	dev_get_stats64(new_slave->dev, &new_slave->slave_stats);
-	printk("bd_d\n");
-
-	printk("bd_e\n");
 
 	/* If the mode uses primary, then the new slave gets the
 	 * master's promisc (and mc) settings only if it becomes the
@@ -1983,10 +1955,8 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	 * bond_change_active()
 	 */
 	if (!bond_uses_primary(bond)) {
-		printk("bd_e_0\n");
 		/* set promiscuity level to new slave */
 		if (bond_dev->flags & IFF_PROMISC) {
-			printk("bd_e_1\n");
 			res = dev_set_promiscuity(slave_dev, 1);
 			if (res)
 				goto err_close;
@@ -1994,28 +1964,22 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 
 		/* set allmulti level to new slave */
 		if (bond_dev->flags & IFF_ALLMULTI) {
-			printk("bd_e_2\n");
 			res = dev_set_allmulti(slave_dev, 1);
 			if (res)
 				goto err_close;
 		}
-		printk("bd_e_3\n");
 
 		netif_addr_lock_bh(bond_dev);
 		/* upload master's mc_list to new slave */
 		for (dmi = bond_dev->mc_list; dmi; dmi = dmi->next)
 		{	
-		    printk("bd_e_4\n");
 		    dev_mc_add(slave_dev, dmi->dmi_addr,
 				   dmi->dmi_addrlen, 0);
 		}
-		printk("bd_e_5\n");
 		netif_addr_unlock_bh(bond_dev);
 	}
-	printk("bd_f\n");
 
 	netvsc_bond_add_vlans_on_slave(bond, slave_dev);
-	printk("bd_10\n");
 
 	prev_slave = bond_last_slave(bond);
 
@@ -2029,12 +1993,10 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	
 	for (i = 0; i < BOND_MAX_ARP_TARGETS; i++)
 	{
-	    printk("bd_10_0\n");
 	    new_slave->target_last_arp_rx[i] = new_slave->last_rx;
 	}
 
 	if (bond->params.miimon && !bond->params.use_carrier) {
-        printk("bd_10_1\n");
 		link_reporting = netvsc_bond_check_dev_link(bond, slave_dev, 1);
 
 		if ((link_reporting == -1) && !bond->params.arp_interval) {
@@ -2054,21 +2016,14 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 				    slave_dev->name);
 		}
 	}
-	printk("bd_11\n");
 
 	/* check for initial state */
-	if (bond->params.miimon) {
-		printk("bd_11_0\n");
-
-	} else if (bond->params.arp_interval) {
-	    printk("bd_11_0_0\n");
+    if (bond->params.arp_interval) {
 		new_slave->link = (netif_carrier_ok(slave_dev) ?
 			BOND_LINK_UP : BOND_LINK_DOWN);
 	} else {
-  	    printk("bd_11_0_0\n");
 		new_slave->link = BOND_LINK_UP;
 	}
-	printk("bd_12\n");
 
 	if (new_slave->link != BOND_LINK_DOWN)
 		new_slave->last_link_up = jiffies;
@@ -2076,24 +2031,9 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		   new_slave->link == BOND_LINK_DOWN ? "DOWN" :
 		   (new_slave->link == BOND_LINK_UP ? "UP" : "BACK"));
 
-	if (bond_uses_primary(bond) && bond->params.primary[0]) {
-		printk("bd_12_0\n");
-
-	}
-	printk("bd_13\n");
 	(bond)->params.mode = BOND_MODE_ACTIVEBACKUP;
-
-	switch (BOND_MODE(bond)) {
-	case BOND_MODE_ACTIVEBACKUP:
-		bond_set_slave_inactive_flags(new_slave,
+	bond_set_slave_inactive_flags(new_slave,
 					      BOND_SLAVE_NOTIFY_NOW);
-		printk("bd_13_0\n");
-		break;
-	default:
-		printk("bd_13_3\n");
-
-		break;
-	} /* switch(bond_mode) */
 
 #ifdef CONFIG_NET_POLL_CONTROLLER
 	slave_dev->npinfo = bond->dev->npinfo;
@@ -2104,7 +2044,6 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 			goto err_detach;
 		}
 	}
-	printk("bd_13_4\n");
 #endif
 
 	res = netvsc_bond_create_slave_symlinks(bond_dev, slave_dev);
@@ -2151,11 +2090,10 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 {
 	struct net_device_context *ndev_ctx = netdev_priv(ndev);
 	int ret;
-	printk("vf_netdev:%lx,vf->flags:%x,ndev:%lx,ndev->flags:%x\n",(uintptr_t)(vf_netdev),vf_netdev->flags,(uintptr_t)(ndev),ndev->flags);
 
 	ret = netvsc_bond_enslave(ndev, vf_netdev);
     rcu_assign_pointer(netdev_extended(vf_netdev)->dev, vf_netdev);
-	printk("vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
+
 	if(ret != 0){
 		netdev_err(vf_netdev,
 			   "can not bond_enslave (err = %d)\n",
@@ -2176,13 +2114,13 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	schedule_work(&ndev_ctx->vf_takeover);
 
 	netdev_info(vf_netdev, "joined to %s\n", ndev->name);
-	printk("here,ret:%d\n",ret);
-        return 0;
+
+    return 0;
 
 upper_link_failed:
-        printk("uplink_failed!\n");
+
 rx_handler_failed:
-        printk("rx_handler_failed!\n");
+
 	return ret;
 }
 
@@ -2288,36 +2226,23 @@ static int netvsc_vf_up(struct net_device *vf_netdev)
 	struct net_device *ndev;
 	struct netvsc_device *netvsc_dev;
 	struct net_device_context *net_device_ctx;
-    printk("up_0\n");
+
 	ndev = get_netvsc_byref(vf_netdev);
-	printk("up_1\n");
 
 	if (!ndev)
-	{
-    	printk("up_2\n");
 		return NOTIFY_DONE;
-	}
 
 	net_device_ctx = netdev_priv(ndev);
-	printk("up_3\n");
 	netvsc_dev = rtnl_dereference(net_device_ctx->nvdev);
-	printk("up_4\n");
 	if (!netvsc_dev)
-	{
-	    printk("up_5\n");
 		return NOTIFY_DONE;
-	}
-	printk("up_6\n");
 
 	/* Bump refcount when datapath is acvive - Why? */
 	rndis_filter_open(netvsc_dev);
-	printk("up_7\n");
 
 	/* notify the host to switch the data path. */
 	netvsc_switch_datapath(ndev, true);
-	printk("up_8\n");
 	netdev_info(ndev, "Data path switched to VF: %s\n", vf_netdev->name);
-	printk("up_9:vf->rx_handler:%lx\n",(uintptr_t)(netdev_extended(vf_netdev)->rx_handler));
 
 	return NOTIFY_OK;
 }
@@ -2354,8 +2279,6 @@ static int netvsc_vf_down(struct net_device *vf_netdev)
 	        //call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, ndev);
 	#endif
         return NOTIFY_OK;
-
-        return NOTIFY_OK;
 }
 
 
@@ -2379,7 +2302,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
-dev_put(vf_netdev);
+    dev_put(vf_netdev);
 	module_put(THIS_MODULE);
 	return NOTIFY_OK;
 }
@@ -2456,7 +2379,6 @@ static int netvsc_probe(struct hv_device *dev,
 		ret = PTR_ERR(nvdev);
 		netdev_err(net, "unable to add netvsc device (ret %d)\n", ret);
 		goto rndis_failed;
-
 	}
 	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
 
@@ -2563,44 +2485,32 @@ static int netvsc_netdev_event(struct notifier_block *this,
 #else
 	struct net_device *event_dev = ptr;
 #endif
-    printk("aabb:event_dev:%lx,event:%d\n",(uintptr_t)event_dev,event);
+
 	/* Skip our own events */
 	if (event_dev->netdev_ops == &device_ops)
-	{
-	    printk("aabb_0\n");
 	    return NOTIFY_DONE;
-	}
 
 	/* Avoid non-Ethernet type devices */
 	if (event_dev->type != ARPHRD_ETHER)
-	{	printk("aabb_1\n");
 	    return NOTIFY_DONE;
-	}
 
 	/* Avoid Vlan dev with same MAC registering as VF */
 	if (is_vlan_dev(event_dev))
-	{	printk("aabb_2\n");
 	    return NOTIFY_DONE;
-	}
 
 	/* Avoid Bonding master dev with same MAC registering as VF */
 	if ((event_dev->priv_flags & IFF_BONDING) &&
 	    (event_dev->flags & IFF_MASTER))
-	{	printk("aabb_3\n");
 	    return NOTIFY_DONE;
-	}
+
 	switch (event) {
 	case NETDEV_REGISTER:
-		printk("aabb_4\n");
 		return netvsc_register_vf(event_dev);
 	case NETDEV_UNREGISTER:
-		printk("aabb_5\n");
 		return netvsc_unregister_vf(event_dev);
 	case NETDEV_UP:
-		printk("aabb_6\n");
 		return netvsc_vf_up(event_dev);
 	case NETDEV_DOWN:
-		printk("aabb_7\n");
 		return netvsc_vf_down(event_dev);
 	default:
 		return NOTIFY_DONE;
