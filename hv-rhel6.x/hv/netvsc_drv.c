@@ -258,14 +258,17 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 	if (vf_netdev) {
 		txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) : 0;
 		qdisc_skb_cb(skb)->slave_dev_queue_mapping = skb->queue_mapping;
+		printk("s_q_0:txq:%d\n",txq);
 	} else {
 		txq = netvsc_pick_tx(ndev, skb);
+        printk("s_q_1:txq:%d\n",txq);		
 	}
 	rcu_read_unlock();
 
 	while (unlikely(txq >= ndev->real_num_tx_queues))
 		txq -= ndev->real_num_tx_queues;
 
+	printk("s_q_2:txq:%d\n",txq);
 	return txq;
 }
 
