@@ -238,6 +238,8 @@ static u16 netvsc_pick_tx(struct net_device *ndev, struct sk_buff *skb)
 	return q_idx;
 }
 
+typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
+				       struct sk_buff *skb);
 
 //#ifdef NOTYET
 #if 1
