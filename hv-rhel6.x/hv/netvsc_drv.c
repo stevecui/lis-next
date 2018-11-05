@@ -239,15 +239,18 @@ static u16 netvsc_pick_tx(struct net_device *ndev, struct sk_buff *skb)
 }
 
 
-#ifdef NOTYET
+//#ifdef NOTYET
+#if 1
 // Divergence from upstream commit:
 // 5b54dac856cb5bd6f33f4159012773e4a33704f7
 static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb,
 			       void *accel_priv,
 			       select_queue_fallback_t fallback)
 #endif
-static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 
+#if 0
+static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
+#endif
 {
 	struct net_device_context *ndc = netdev_priv(ndev);
 	struct net_device *vf_netdev;
@@ -2390,7 +2393,6 @@ static int netvsc_probe(struct hv_device *dev,
 		goto rndis_failed;
 	}
 	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
-
 #ifdef NOTYET
 	/* hw_features computed in rndis_filter_device_add */
 	net->features = net->hw_features |
