@@ -1803,6 +1803,40 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 	return RX_HANDLER_ANOTHER;
 }
 
+#define BOND_VLAN_FEATURES	(NETIF_F_ALL_CSUM | NETIF_F_SG | \
+				 NETIF_F_FRAGLIST | NETIF_F_ALL_TSO | \
+				 NETIF_F_HIGHDMA | NETIF_F_LRO)
+
+static void netvsc_bond_compute_features(struct bonding *bond)
+{
+	unsigned int flags, dst_release_flag = IFF_XMIT_DST_RELEASE;
+	unsigned short max_hard_header_len = ETH_HLEN;
+	unsigned int gso_max_size = GSO_MAX_SIZE;
+	struct net_device *bond_dev = bond->dev;
+	u32 vlan_features = BOND_VLAN_FEATURES;
+	u16 gso_max_segs = GSO_MAX_SEGS;
+	struct list_head *iter;
+	struct slave *slave;
+
+	if (!bond_has_slaves(bond))
+		goto done;
+	
+done:
+	bond_dev->vlan_features = vlan_features;
+	bond_dev->hard_header_len = max_hard_header_len;
+	netdev_extended(bond_dev)->gso_max_segs = gso_max_segs;
+	netif_set_gso_max_size(bond_dev, gso_max_size);
+
+	flags = bond_dev->priv_flags & ~IFF_XMIT_DST_RELEASE;
+	bond_dev->priv_flags = flags | dst_release_flag;
+
+	/* RHEL-specific: netdev_change_features(bond_dev); */
+	//netdev_update_features(bond_dev);
+	//netdev_features_change(bond_dev);
+}
+
+
+
 /* enslave device <slave> to bond device <master> */
 int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
 {
@@ -2070,7 +2104,8 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		netdev_dbg(bond_dev, "Error %d calling bond_master_upper_dev_link\n", res);
 		goto err_unregister;
 	}
-	bond_compute_features(bond);
+	
+	netvsc_bond_compute_features(bond);
 
 /* Undo stages on error */
 err_unregister:
