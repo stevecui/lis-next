@@ -333,6 +333,7 @@ static int netvsc_vf_xmit(struct net_device *net, struct net_device *vf_netdev,
 
 	return rc;
 }
+//netvsc_start_xmit
 
 static u32 init_page_array(void *hdr, u32 len, struct sk_buff *skb,
 			   struct hv_netvsc_packet *packet,
@@ -2069,6 +2070,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		netdev_dbg(bond_dev, "Error %d calling bond_master_upper_dev_link\n", res);
 		goto err_unregister;
 	}
+	bond_compute_features(bond);
 
 /* Undo stages on error */
 err_unregister:
