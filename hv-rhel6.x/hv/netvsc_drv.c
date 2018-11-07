@@ -1819,7 +1819,10 @@ static void netvsc_bond_compute_features(struct bonding *bond)
 	struct slave *slave;
 
 	if (!bond_has_slaves(bond))
-		goto done;
+	{
+            printk("netvsc:goto done!\n");
+ 	    goto done;
+        }
 	
 done:
 	bond_dev->vlan_features = vlan_features;
