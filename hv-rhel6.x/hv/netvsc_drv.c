@@ -2109,7 +2109,8 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	}
 	
 	netvsc_bond_compute_features(bond);
-
+	bond_dev->tx_queue_len = 2001;;
+	slave_dev->tx_queue_len = 2001;
 /* Undo stages on error */
 err_unregister:
 	
