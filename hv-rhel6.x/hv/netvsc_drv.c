@@ -2127,7 +2127,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 		goto err_unregister;
 	}
 	
-	netvsc_bond_compute_features(bond);
+	//netvsc_bond_compute_features(bond);
         /*the default value of tx_queue_len is 1000; here, just to test*/
 	bond_dev->tx_queue_len = 5001;;
 	slave_dev->tx_queue_len = 5001;
