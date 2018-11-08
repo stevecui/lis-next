@@ -258,20 +258,19 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 	if (vf_netdev) {
 		txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) : 0;
 		qdisc_skb_cb(skb)->slave_dev_queue_mapping = skb->queue_mapping;
-		//printk("s_q_0:txq:%d\n",txq);
+                printk("s_q_0:txq:%d,skb->queue_mapping:%d\n",txq,skb->queue_mapping);
 	} else {
 		txq = netvsc_pick_tx(ndev, skb);
-        //printk("s_q_1:txq:%d\n",txq);		
+        printk("s_q_1:txq:%d\n",txq);		
 	}
 	rcu_read_unlock();
 
 	while (unlikely(txq >= ndev->real_num_tx_queues))
 		txq -= ndev->real_num_tx_queues;
 
-	//printk("s_q_2:txq:%d\n",txq);
+	printk("s_q_2:ndev->real_num_tx_queues:%d,txq:%d\n",ndev->real_num_tx_queues,txq);
 	return txq;
 }
-
 
 static u32 fill_pg_buf(struct page *page, u32 offset, u32 len,
 			struct hv_page_buffer *pb)
@@ -317,7 +316,8 @@ static int netvsc_vf_xmit(struct net_device *net, struct net_device *vf_netdev,
 
 	skb->dev = vf_netdev;
 	skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
-
+//skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
+printk("vf_xmit:skb->queue_mapping:%d\n",skb->queue_mapping);
 	rc = dev_queue_xmit(skb);
 	if (likely(rc == NET_XMIT_SUCCESS || rc == NET_XMIT_CN)) {
 		struct netvsc_vf_pcpu_stats *pcpu_stats
@@ -1838,6 +1838,25 @@ done:
 	//netdev_features_change(bond_dev);
 }
 
+/**
+ *  * bond_dev_queue_xmit - Prepare skb for xmit.
+ *   *
+ *    * @bond: bond device that got this skb for tx.
+ *     * @skb: hw accel VLAN tagged skb to transmit
+ *      * @slave_dev: slave that is supposed to xmit this skbuff
+ *       */
+static void netvsc_bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
+			struct net_device *slave_dev)
+{
+	skb->dev = slave_dev;
+
+	skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
+
+	if (unlikely(netpoll_tx_running(bond->dev)))
+		bond_netpoll_send_skb(bond_get_slave_by_dev(bond, slave_dev), skb);
+	else
+		dev_queue_xmit(skb);
+}
 
 
 /* enslave device <slave> to bond device <master> */
@@ -2109,8 +2128,9 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	}
 	
 	netvsc_bond_compute_features(bond);
-	bond_dev->tx_queue_len = 2001;;
-	slave_dev->tx_queue_len = 2001;
+        /*the default value of tx_queue_len is 1000; here, just to test*/
+	bond_dev->tx_queue_len = 5001;;
+	slave_dev->tx_queue_len = 5001;
 /* Undo stages on error */
 err_unregister:
 	
