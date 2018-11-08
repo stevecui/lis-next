@@ -1834,8 +1834,8 @@ done:
 	bond_dev->priv_flags = flags | dst_release_flag;
 
 	/* RHEL-specific: netdev_change_features(bond_dev); */
-	//netdev_update_features(bond_dev);
-	//netdev_features_change(bond_dev);
+	netdev_update_features(bond_dev);
+	netdev_features_change(bond_dev);
 }
 
 /**
