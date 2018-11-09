@@ -2109,7 +2109,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	slave_dev->npinfo = bond->dev->npinfo;
 	printk("hello_napi:slave_dev->npinfo:%lx\n",(uintptr_t)(slave_dev->npinfo));
 
-	//if (slave_dev->npinfo) {
+	if (slave_dev->npinfo) {
 		printk("hello_napi\n");
 		//if (slave_enable_netpoll(new_slave)) {
 		if (slave_enable_netpoll(slave_dev)) {
@@ -2117,7 +2117,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 			res = -EBUSY;
 			goto err_detach;
 		}
-	//}
+	}
 #endif
 
 	res = netvsc_bond_create_slave_symlinks(bond_dev, slave_dev);
