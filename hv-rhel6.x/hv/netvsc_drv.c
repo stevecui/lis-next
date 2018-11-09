@@ -2100,6 +2100,8 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 
 #ifdef CONFIG_NET_POLL_CONTROLLER
 	slave_dev->npinfo = bond->dev->npinfo;
+	printk("hello_napi:slave_dev->npinfo:%lx\n",(uintptr_t)(slave_dev->npinfo));
+
 	if (slave_dev->npinfo) {
 		printk("hello_napi\n");
 		//if (slave_enable_netpoll(new_slave)) {
