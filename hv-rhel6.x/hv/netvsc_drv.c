@@ -58,6 +58,8 @@ atomic_t netpoll_block_tx = ATOMIC_INIT(0);
 #endif
 
 static int ring_size = 128;
+static struct net_device * my_dev = NULL;
+
 module_param(ring_size, int, 0444);
 MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
 
@@ -1275,13 +1277,14 @@ netvsc_get_rxnfc(struct net_device *dev, struct ethtool_rxnfc *info,
 	return -EOPNOTSUPP;
 }
 
+
 #ifdef CONFIG_NET_POLL_CONTROLLER //the macro is youxiao 
 static void netvsc_poll_controller(struct net_device *dev)
 {
 	struct net_device_context *ndc = netdev_priv(dev);
 	struct netvsc_device *ndev;
 	int i;
-
+printk("net_poll:dev:%lx\n",(uintptr_t)dev);
 	rcu_read_lock();
 	ndev = rcu_dereference(ndc->nvdev);
 	if (ndev) {
@@ -2098,7 +2101,9 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 #ifdef CONFIG_NET_POLL_CONTROLLER
 	slave_dev->npinfo = bond->dev->npinfo;
 	if (slave_dev->npinfo) {
-		if (slave_enable_netpoll(new_slave)) {
+		printk("hello_napi\n");
+		//if (slave_enable_netpoll(new_slave)) {
+		if (slave_enable_netpoll(slave_dev)) {
 			netdev_info(bond_dev, "master_dev is using netpoll, but new slave device does not support netpoll\n");
 			res = -EBUSY;
 			goto err_detach;
