@@ -2110,7 +2110,7 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 			res = -EBUSY;
 			goto err_detach;
 		}
-	}
+	//}
 #endif
 
 	res = netvsc_bond_create_slave_symlinks(bond_dev, slave_dev);
