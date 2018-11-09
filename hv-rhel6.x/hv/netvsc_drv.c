@@ -261,10 +261,9 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 		const struct net_device_ops *vf_ops = vf_netdev->netdev_ops;
 
 		if (vf_ops->ndo_select_queue)
-			txq = vf_ops->ndo_select_queue(vf_netdev, skb,
-						       accel_priv, fallback);
+			txq = vf_ops->ndo_select_queue(vf_netdev, skb);
 		else
-			txq = fallback(vf_netdev, skb);
+			txq = 0;
 
 		/* Record the queue selected by VF so that it can be
 		 * used for common case where VF has more queues than
