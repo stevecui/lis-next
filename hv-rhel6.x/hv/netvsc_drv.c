@@ -2378,7 +2378,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
-    dev_put(vf_netdev);
+    //dev_put(vf_netdev);
 	module_put(THIS_MODULE);
 	return NOTIFY_OK;
 }
