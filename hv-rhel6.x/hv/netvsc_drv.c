@@ -2143,8 +2143,8 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	
 	//netvsc_bond_compute_features(bond);
         /*the default value of tx_queue_len is 1000; here, just to test*/
-	bond_dev->tx_queue_len = 5001;;
-	slave_dev->tx_queue_len = 5001;
+//	bond_dev->tx_queue_len = 5001;;
+//	slave_dev->tx_queue_len = 5001;
 /* Undo stages on error */
 err_unregister:
 	
@@ -2378,7 +2378,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
-    dev_put(vf_netdev);
+    //dev_put(vf_netdev);
 	module_put(THIS_MODULE);
 	return NOTIFY_OK;
 }
