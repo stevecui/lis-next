@@ -1275,7 +1275,7 @@ netvsc_get_rxnfc(struct net_device *dev, struct ethtool_rxnfc *info,
 	return -EOPNOTSUPP;
 }
 
-#ifdef CONFIG_NET_POLL_CONTROLLER
+#ifdef CONFIG_NET_POLL_CONTROLLER //the macro is youxiao 
 static void netvsc_poll_controller(struct net_device *dev)
 {
 	struct net_device_context *ndc = netdev_priv(dev);
