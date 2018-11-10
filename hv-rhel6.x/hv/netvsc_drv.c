@@ -256,9 +256,19 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 	rcu_read_lock();
 	vf_netdev = rcu_dereference(ndc->vf_netdev);
 	if (vf_netdev) {
-		txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) : 0;
-		qdisc_skb_cb(skb)->slave_dev_queue_mapping = skb->queue_mapping;
-	} else {
+		const struct net_device_ops *vf_ops = vf_netdev->netdev_ops;
+
+		if (vf_ops->ndo_select_queue)
+			txq = vf_ops->ndo_select_queue(vf_netdev, skb);
+		else
+			txq = 0;
+
+		/* Record the queue selected by VF so that it can be
+  		 * used for common case where VF has more queues than
+ 		 * the synthetic device.
+ 		 */
+		qdisc_skb_cb(skb)->slave_dev_queue_mapping = txq;
+        } else {
 		txq = netvsc_pick_tx(ndev, skb);
 	}
 	rcu_read_unlock();
@@ -313,6 +323,7 @@ static int netvsc_vf_xmit(struct net_device *net, struct net_device *vf_netdev,
 	int rc;
 
 	skb->dev = vf_netdev;
+printk("vf_xmit:%p,%p,%p,:%p\n",(unsigned int)net,(unsigned int)vf_netdev,(unsigned int)skb,(unsigned int)(skb->dev));
 	skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
 
 	rc = dev_queue_xmit(skb);
@@ -2093,7 +2104,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 
 	ret = netvsc_bond_enslave(ndev, vf_netdev);
     rcu_assign_pointer(netdev_extended(vf_netdev)->dev, vf_netdev);
-
+printk("vf_join:vsc:%p,vf:%p\n",ndev,vf_netdev);
 	if(ret != 0){
 		netdev_err(vf_netdev,
 			   "can not bond_enslave (err = %d)\n",
