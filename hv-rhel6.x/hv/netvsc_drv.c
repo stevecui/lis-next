@@ -323,7 +323,8 @@ static int netvsc_vf_xmit(struct net_device *net, struct net_device *vf_netdev,
 	int rc;
 
 	skb->dev = vf_netdev;
-printk("vf_xmit:%p,%p,%p,:%p\n",(unsigned int)net,(unsigned int)vf_netdev,(unsigned int)skb,(unsigned int)(skb->dev));
+printk("vf_xt:%x,%x,%x,:%x\n",(unsigned int)(uintptr_t)net,(unsigned int)(uintptr_t)vf_netdev,(unsigned int)(uintptr_t)skb,(unsigned int)(uintptr_t)(skb->dev));
+//printk("vf_xt\n");
 	skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
 
 	rc = dev_queue_xmit(skb);
