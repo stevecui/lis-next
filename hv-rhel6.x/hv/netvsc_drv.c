@@ -323,7 +323,7 @@ static int netvsc_vf_xmit(struct net_device *net, struct net_device *vf_netdev,
 	int rc;
 
 	skb->dev = vf_netdev;
-printk("vf_xt:%x,%x,%x,:%x\n",(unsigned int)(uintptr_t)net,(unsigned int)(uintptr_t)vf_netdev,(unsigned int)(uintptr_t)skb,(unsigned int)(uintptr_t)(skb->dev));
+printk("vf_xt:cpu:%d,%x,%x,%x\n",smp_processor_id(),(unsigned int)(uintptr_t)net,(unsigned int)(uintptr_t)vf_netdev,(unsigned int)(uintptr_t)skb);
 //printk("vf_xt\n");
 	skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
 
