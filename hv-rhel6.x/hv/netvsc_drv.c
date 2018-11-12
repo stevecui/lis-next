@@ -463,9 +463,10 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
 	
 	if (vf_netdev && netif_running(vf_netdev) &&
 	    !netpoll_tx_running(net))
-	{
+	{printk("con4\n");
 	    return netvsc_vf_xmit(net, vf_netdev, skb);
 	}
+	printk("con5\n");
 
 	/* We will atmost need two pages to describe the rndis
 	 * header. We can only transmit MAX_PAGE_BUFFER_COUNT number
