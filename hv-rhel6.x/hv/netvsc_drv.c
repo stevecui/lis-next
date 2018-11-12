@@ -752,7 +752,7 @@ int netvsc_recv_callback(struct net_device *net,
 	u16 q_idx = channel->offermsg.offer.sub_channel_index;
 	struct netvsc_channel *nvchan = &net_device->chan_table[q_idx];
 	struct sk_buff *skb;
-	//struct sk_buff *vf_skb;
+	struct sk_buff *vf_skb;
 	struct netvsc_stats *rx_stats;
 	int ret = 0;
         printk("rx0\n");
@@ -807,7 +807,7 @@ vf_injection_done:
 	rx_stats = &nvchan->rx_stats;
         printk("rx9\n");
 	/* Allocate a skb - TODO direct I/O to pages? */
-	skb = netvsc_alloc_recv_skb(net, csum_info, vlan, data, len);
+	skb = netvsc_alloc_recv_skb(net, &nvchan->napi,csum_info, vlan, data, len);
         printk("rx10\n");
 	if (unlikely(!skb)) {
                 printk("rx11\n");
