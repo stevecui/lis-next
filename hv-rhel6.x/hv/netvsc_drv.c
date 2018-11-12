@@ -257,10 +257,11 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 	vf_netdev = rcu_dereference(ndc->vf_netdev);
 	if (vf_netdev) {
 		const struct net_device_ops *vf_ops = vf_netdev->netdev_ops;
-
+#if 0
 		if (vf_ops->ndo_select_queue)
 			txq = vf_ops->ndo_select_queue(vf_netdev, skb);
 		else
+#endif
 			txq = 0;
 
 		/* Record the queue selected by VF so that it can be
@@ -323,7 +324,7 @@ static int netvsc_vf_xmit(struct net_device *net, struct net_device *vf_netdev,
 	int rc;
 
 	skb->dev = vf_netdev;
-printk("vf_xt:cpu:%d,%x,%x,%x\n",smp_processor_id(),(unsigned int)(uintptr_t)net,(unsigned int)(uintptr_t)vf_netdev,(unsigned int)(uintptr_t)skb);
+printk("vf_xt:cpu:%d,%x,%x,%x,%d\n",smp_processor_id(),(unsigned int)(uintptr_t)net,(unsigned int)(uintptr_t)vf_netdev,(unsigned int)(uintptr_t)skb,skb->len);
 //printk("vf_xt\n");
 	skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
 
