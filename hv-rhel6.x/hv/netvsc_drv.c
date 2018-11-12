@@ -774,7 +774,7 @@ int netvsc_recv_callback(struct net_device *net,
 		 */
 		vf_skb = netvsc_alloc_recv_skb(net_device_ctx->vf_netdev,
 					       csum_info, vlan, data, len);
-                printk("rx call back\n");
+                printk("rx_call_back\n");
 		if (vf_skb != NULL) {
 			++net_device_ctx->vf_netdev->stats.rx_packets;
 			net_device_ctx->vf_netdev->stats.rx_bytes +=
