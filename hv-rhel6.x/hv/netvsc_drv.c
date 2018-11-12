@@ -2254,6 +2254,7 @@ static int netvsc_vf_up(struct net_device *vf_netdev)
 	/* notify the host to switch the data path. */
 	netvsc_switch_datapath(ndev, true);
 	netdev_info(ndev, "Data path switched to VF: %s\n", vf_netdev->name);
+	netvsc_inject_enable(net_device_ctx);
 
 	return NOTIFY_OK;
 }
