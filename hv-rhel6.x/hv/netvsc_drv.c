@@ -456,7 +456,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
 	vf_netdev = rcu_dereference_bh(net_device_ctx->vf_netdev);
 	if(0 == (uintptr_t)vf_netdev)
 		printk("con1\n");
-	if(0 == netif_running(vf_netdev))
+	if(0!==(uintptr_t)vf_netdev&& 0 == netif_running(vf_netdev))
 		printk("con2\n");
 	if(0 != netpoll_tx_running(net))
 		printk("con3\n");
