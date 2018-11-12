@@ -692,13 +692,18 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
 }
 
 static struct sk_buff *netvsc_alloc_recv_skb(struct net_device *net,
+					     struct napi_struct *napi,
 					     const struct ndis_tcp_ip_checksum_info *csum_info,
 					     const struct ndis_pkt_8021q_info *vlan,
 					     void *data, u32 buflen)
 {
 	struct sk_buff *skb;
 
+#if (RHEL_RELEASE_CODE > RHEL_RELEASE_VERSION(7,1))
+	skb = napi_alloc_skb(napi, buflen);
+#else
 	skb = netdev_alloc_skb_ip_align(net, buflen);
+#endif
 	if (!skb)
 		return skb;
 
@@ -747,7 +752,7 @@ int netvsc_recv_callback(struct net_device *net,
 	u16 q_idx = channel->offermsg.offer.sub_channel_index;
 	struct netvsc_channel *nvchan = &net_device->chan_table[q_idx];
 	struct sk_buff *skb;
-	struct sk_buff *vf_skb;
+	//struct sk_buff *vf_skb;
 	struct netvsc_stats *rx_stats;
 	int ret = 0;
         printk("rx0\n");
@@ -776,8 +781,10 @@ int netvsc_recv_callback(struct net_device *net,
 		 * the host). Deliver these via the VF interface
 		 * in the guest.
 		 */
-		vf_skb = netvsc_alloc_recv_skb(net_device_ctx->vf_netdev,
-					       csum_info, vlan, data, len);
+		//vf_skb = netvsc_alloc_recv_skb(net_device_ctx->vf_netdev,
+		//			       csum_info, vlan, data, len);
+		skb = netvsc_alloc_recv_skb(net, &nvchan->napi,
+				    csum_info, vlan, data, len);
                 printk("rx5:rx_call_back\n");
 		if (vf_skb != NULL) {
 			++net_device_ctx->vf_netdev->stats.rx_packets;
