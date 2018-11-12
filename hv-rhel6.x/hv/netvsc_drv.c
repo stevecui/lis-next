@@ -758,7 +758,7 @@ int netvsc_recv_callback(struct net_device *net,
 			 const struct ndis_pkt_8021q_info *vlan)
 {
 	struct net_device_context *net_device_ctx = netdev_priv(net);
-	struct netvsc_device *net_device = net_device_ctx->nvdev;
+	struct netvsc_device *net_device = NULL;
 	u16 q_idx = channel->offermsg.offer.sub_channel_index;
 	struct netvsc_channel *nvchan = &net_device->chan_table[q_idx];
 	struct sk_buff *skb;
@@ -793,6 +793,8 @@ int netvsc_recv_callback(struct net_device *net,
 		 */
 		//vf_skb = netvsc_alloc_recv_skb(net_device_ctx->vf_netdev,
 		//			       csum_info, vlan, data, len);
+		rcu_read_lock();
+		net_device = rcu_dereference(net_device_ctx->nvdev);
 		skb = netvsc_alloc_recv_skb(net, &nvchan->napi,
 				    csum_info, vlan, data, len);
                 printk("rx5:rx_call_back\n");
@@ -810,10 +812,12 @@ int netvsc_recv_callback(struct net_device *net,
 		}
 		atomic_dec(&net_device_ctx->vf_use_cnt);
                 printk("rx8\n");
+				rcu_read_unlock();
 		return ret;
 	}
 
 vf_injection_done:
+	rcu_read_lock();
 	rx_stats = &nvchan->rx_stats;
         printk("rx9\n");
 	/* Allocate a skb - TODO direct I/O to pages? */
@@ -840,6 +844,7 @@ vf_injection_done:
 	net->stats.rx_bytes += len;
         printk("rx14\n");
 	napi_gro_receive(&nvchan->napi, skb);
+	rcu_read_unlock();
         printk("rx15\n");	
         return NVSP_STAT_SUCCESS;
 }
