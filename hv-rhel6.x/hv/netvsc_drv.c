@@ -452,11 +452,20 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
 	/* if VF is present and up then redirect packets
 	 * already called with rcu_read_lock_bh
 	 */
+	 
 	vf_netdev = rcu_dereference_bh(net_device_ctx->vf_netdev);
+	if(0 == (uintptr_t)vf_netdev)
+		printk("con1\n");
+	if(0 == netif_running(vf_netdev))
+		printk("con2\n");
+	if(0 != netpoll_tx_running(net))
+		printk("con3\n");
+	
 	if (vf_netdev && netif_running(vf_netdev) &&
 	    !netpoll_tx_running(net))
-	return netvsc_vf_xmit(net, vf_netdev, skb);
-
+	{
+	    return netvsc_vf_xmit(net, vf_netdev, skb);
+	}
 
 	/* We will atmost need two pages to describe the rndis
 	 * header. We can only transmit MAX_PAGE_BUFFER_COUNT number
