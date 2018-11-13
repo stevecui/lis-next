@@ -795,7 +795,7 @@ int netvsc_recv_callback(struct net_device *net,
 		//			       csum_info, vlan, data, len);
 		//rcu_read_lock();
 		//net_device = rcu_dereference(net_device_ctx->nvdev);
-		skb = netvsc_alloc_recv_skb(net, &nvchan->napi,
+		skb = netvsc_alloc_recv_skb(net_device_ctx->vf_netdev, &nvchan->napi,
 				    csum_info, vlan, data, len);
                 printk("rx5:rx_call_back\n");
 		if (vf_skb != NULL) {
