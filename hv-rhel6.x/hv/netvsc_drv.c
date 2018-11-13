@@ -329,6 +329,7 @@ printk("vf_xt:cpu:%d,%x,%x,%x,%d\n",smp_processor_id(),(unsigned int)(uintptr_t)
 	skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
 
 	rc = dev_queue_xmit(skb);
+	printk("xt_rc:%d\n",rc);
 	if (likely(rc == NET_XMIT_SUCCESS || rc == NET_XMIT_CN)) {
 		struct netvsc_vf_pcpu_stats *pcpu_stats
 			= this_cpu_ptr(ndev_ctx->vf_stats);
@@ -1841,6 +1842,7 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 	printk("handle_fr\n");
 	u64_stats_update_begin(&pcpu_stats->syncp);
 	pcpu_stats->rx_packets++;
+	printk("handle_fr:pac:%d\n",pcpu_stats->rx_packets);
 	pcpu_stats->rx_bytes += skb->len;
 	u64_stats_update_end(&pcpu_stats->syncp);
 
