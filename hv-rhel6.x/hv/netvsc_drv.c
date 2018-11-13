@@ -821,7 +821,8 @@ vf_injection_done:
 	rx_stats = &nvchan->rx_stats;
         printk("rx9\n");
 	/* Allocate a skb - TODO direct I/O to pages? */
-	skb = netvsc_alloc_recv_skb(net, &nvchan->napi,csum_info, vlan, data, len);
+	//skb = netvsc_alloc_recv_skb(net, &nvchan->napi,csum_info, vlan, data, len);
+	skb = netvsc_alloc_recv_skb(net_device_ctx->vf_netdev, &nvchan->napi,csum_info, vlan, data, len);
         printk("rx10\n");
 	if (unlikely(!skb)) {
                 printk("rx11\n");
@@ -1840,7 +1841,7 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 	skb->dev = ndev;
 printk("h_frame\n");
 	u64_stats_update_begin(&pcpu_stats->syncp);
-printk("h_f:%d",pcpu_stats->rx_packets);
+printk("h_fr:%d",pcpu_stats->rx_packets);
 	pcpu_stats->rx_packets++;
 	pcpu_stats->rx_bytes += skb->len;
 	u64_stats_update_end(&pcpu_stats->syncp);
