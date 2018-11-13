@@ -1838,7 +1838,9 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 		 = this_cpu_ptr(ndev_ctx->vf_stats);
 
 	skb->dev = ndev;
+printk("h_frame\n");
 	u64_stats_update_begin(&pcpu_stats->syncp);
+printk("h_f:%d",pcpu_stats->rx_packets);
 	pcpu_stats->rx_packets++;
 	pcpu_stats->rx_bytes += skb->len;
 	u64_stats_update_end(&pcpu_stats->syncp);
