@@ -452,7 +452,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
 	/* if VF is present and up then redirect packets
 	 * already called with rcu_read_lock_bh
 	 */
-	 
+	 printk("con0\n");
 	vf_netdev = rcu_dereference_bh(net_device_ctx->vf_netdev);
 	if(0 == (uintptr_t)vf_netdev)
 		printk("con1\n");
