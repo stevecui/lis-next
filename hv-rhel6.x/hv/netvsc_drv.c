@@ -714,7 +714,7 @@ static struct sk_buff *netvsc_alloc_recv_skb(struct net_device *net,
 #else
 	skb = netdev_alloc_skb_ip_align(net, buflen);
 #endif
-	napi_reuse_skb(napi,skb);
+	//napi_reuse_skb(napi,skb);
 
 	if (!skb)
 		return skb;
