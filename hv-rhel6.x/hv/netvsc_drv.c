@@ -767,10 +767,10 @@ int netvsc_recv_callback(struct net_device *net,
 	struct sk_buff *vf_skb;
 	struct netvsc_stats *rx_stats;
 	int ret = 0;
-        printk("rx0\n");
+        //printk("rx0\n");
 	if (!net || net->reg_state != NETREG_REGISTERED)
 	{
-            printk("rx1\n");
+          //  printk("rx1\n");
 	    return NVSP_STAT_FAIL;
         }
 	if (READ_ONCE(net_device_ctx->vf_inject)) {
@@ -784,7 +784,7 @@ int netvsc_recv_callback(struct net_device *net,
                         printk("rx3\n");
 			goto vf_injection_done;
 		}
-                printk("rx4\n");
+            //    printk("rx4\n");
 		/*
 		 * Inject this packet into the VF inerface.
 		 * On Hyper-V, multicast and brodcast packets
@@ -799,21 +799,21 @@ int netvsc_recv_callback(struct net_device *net,
 		//net_device = rcu_dereference(net_device_ctx->nvdev);
 		skb = netvsc_alloc_recv_skb(net_device_ctx->vf_netdev, &nvchan->napi,
 				    csum_info, vlan, data, len);
-                printk("rx5:rx_call_back\n");
+              //  printk("rx5:rx_call_back\n");
 		if (vf_skb != NULL) {
 			++net_device_ctx->vf_netdev->stats.rx_packets;
 			net_device_ctx->vf_netdev->stats.rx_bytes +=
 				len;
                         
 			netif_receive_skb(vf_skb);
-                        printk("rx6\n");
+                //        printk("rx6\n");
 		} else {
-                        printk("rx7\n");
+                  //      printk("rx7\n");
 			++net->stats.rx_dropped;
 			ret = NVSP_STAT_FAIL;
 		}
 		atomic_dec(&net_device_ctx->vf_use_cnt);
-                printk("rx8\n");
+                //printk("rx8\n");
 		//		rcu_read_unlock();
 		return ret;
 	}
@@ -821,18 +821,18 @@ int netvsc_recv_callback(struct net_device *net,
 vf_injection_done:
 	//rcu_read_lock();
 	rx_stats = &nvchan->rx_stats;
-        printk("rx9\n");
+        //printk("rx9\n");
 	/* Allocate a skb - TODO direct I/O to pages? */
 	skb = netvsc_alloc_recv_skb(net, &nvchan->napi,csum_info, vlan, data, len);
 	//skb = netvsc_alloc_recv_skb(net_device_ctx->vf_netdev, &nvchan->napi,csum_info, vlan, data, len);
-        printk("rx10\n");
+        //printk("rx10\n");
 	if (unlikely(!skb)) {
-                printk("rx11\n");
+         //       printk("rx11\n");
 		++net->stats.rx_dropped;
 		return NVSP_STAT_FAIL;
 	}
 	skb_record_rx_queue(skb, q_idx);
-        printk("rx12\n");
+        //printk("rx12\n");
 	u64_stats_update_begin(&rx_stats->syncp);
 	rx_stats->packets++;
 	rx_stats->bytes += len;
@@ -842,13 +842,13 @@ vf_injection_done:
 	else if (skb->pkt_type == PACKET_MULTICAST)
 		++rx_stats->multicast;
 	u64_stats_update_end(&rx_stats->syncp);
-        printk("rx14\n");
+        //printk("rx14\n");
 	net->stats.rx_packets++;
 	net->stats.rx_bytes += len;
-        printk("rx14\n");
+        //printk("rx14\n");
 	napi_gro_receive(&nvchan->napi, skb);
 	//rcu_read_unlock();
-        printk("rx15\n");	
+        //printk("rx15\n");	
         return NVSP_STAT_SUCCESS;
 }
 
