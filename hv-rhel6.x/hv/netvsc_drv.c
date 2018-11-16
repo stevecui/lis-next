@@ -249,6 +249,7 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb,
 static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 
 {
+#if 0
 	struct net_device_context *ndc = netdev_priv(ndev);
 	struct net_device *vf_netdev;
 	u16 txq;
@@ -278,6 +279,22 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 		txq -= ndev->real_num_tx_queues;
 
 	return txq;
+#else
+
+struct net_device_context *net_device_ctx = netdev_priv(ndev);
+u32 hash;
+u16 q_idx = 0;
+
+if (ndev->real_num_tx_queues <= 1)
+		return 0;
+
+hash = skb_get_hash(skb);
+q_idx = net_device_ctx->tx_table[hash % VRSS_SEND_TAB_SIZE] %
+		ndev->real_num_tx_queues;
+
+return q_idx;
+
+#endif	
 }
 
 
