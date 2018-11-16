@@ -836,7 +836,7 @@ vf_injection_done:
 	u64_stats_update_begin(&rx_stats->syncp);
 	rx_stats->packets++;
 	rx_stats->bytes += len;
-        printk("rx13\n");
+//        printk("rx13\n");
 	if (skb->pkt_type == PACKET_BROADCAST)
 		++rx_stats->broadcast;
 	else if (skb->pkt_type == PACKET_MULTICAST)
@@ -1327,7 +1327,7 @@ static void netvsc_poll_controller(struct net_device *dev)
 	struct net_device_context *ndc = netdev_priv(dev);
 	struct netvsc_device *ndev;
 	int i;
-
+printk("_poll_\n");
 	rcu_read_lock();
 	ndev = rcu_dereference(ndc->nvdev);
 	if (ndev) {
@@ -1839,15 +1839,15 @@ static rx_handler_result_t netvsc_vf_handle_frame(struct sk_buff **pskb)
 	struct net_device_context *ndev_ctx = netdev_priv(ndev);
 	struct netvsc_vf_pcpu_stats *pcpu_stats
 		 = this_cpu_ptr(ndev_ctx->vf_stats);
-
+rcu_read_lock();
 	skb->dev = ndev;
-printk("h_frame\n");
+printk("h_:cpu:%d,%x,len:%d\n",smp_processor_id(),(unsigned int)(uintptr_t)skb,skb->len);
 	u64_stats_update_begin(&pcpu_stats->syncp);
-printk("h_fr:%di\n",pcpu_stats->rx_packets);
+printk("h_fr:%d\n",pcpu_stats->rx_packets);
 	pcpu_stats->rx_packets++;
 	pcpu_stats->rx_bytes += skb->len;
 	u64_stats_update_end(&pcpu_stats->syncp);
-
+rcu_read_unlock();
 	return RX_HANDLER_ANOTHER;
 }
 
