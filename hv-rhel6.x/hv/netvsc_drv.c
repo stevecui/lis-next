@@ -2205,7 +2205,7 @@ printk("vf_join:vsc:%p,vf:%p\n",ndev,vf_netdev);
 
 	//ret = netdev_upper_dev_link(vf_netdev, ndev,
 	//				   NULL, NULL, NULL);
-	ret = netdev_master_upper_dev_link(vf_netdev, ndev);
+	ret = netvsc_bond_master_upper_dev_link(vf_netdev, ndev,NULL);
 
 	if (ret != 0) {
 		netdev_err(vf_netdev,
