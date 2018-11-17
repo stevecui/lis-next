@@ -280,21 +280,39 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 
 	return txq;
 #else
-
-struct net_device_context *net_device_ctx = netdev_priv(ndev);
+#if 0
+struct net_device_context *ndc = netdev_priv(ndev);
 u32 hash;
 u16 q_idx = 0;
+        struct net_device *vf_netdev;
+//printk("1\n");
+        rcu_read_lock();
+        vf_netdev = rcu_dereference(ndc->vf_netdev);
+
+//printk("2\n");
+
 
 if (ndev->real_num_tx_queues <= 1)
+{
+//printk("3\n");
 		return 0;
-
-hash = skb_get_hash(skb);
-q_idx = net_device_ctx->tx_table[hash % VRSS_SEND_TAB_SIZE] %
-		ndev->real_num_tx_queues;
-
+}
+//printk("4\n");
+//vf_netdev->real_num_tx_queues = 8;
+//printk("5\n");
+//hash = skb_get_hash(skb);
+//hash=skb_tx_hash(vf_netdev,skb);
+hash=skb_tx_hash(ndev,skb);
+//printk("6\n");
+//q_idx = net_device_ctx->tx_table[hash % VRSS_SEND_TAB_SIZE] %
+//		ndev->real_num_tx_queues;
+q_idx = hash;
+//printk("7\n");
+rcu_read_unlock();
 return q_idx;
-
-#endif	
+#endif
+#endif
+return 0;	
 }
 
 
