@@ -2188,12 +2188,33 @@ printk("vf_join:vsc:%p,vf:%p\n",ndev,vf_netdev);
 		goto rx_handler_failed;
 	}	
 	
+	//rcu_assign_pointer(netdev_extended(ndev)->rx_handler_data, vf_netdev);
+	//rcu_assign_pointer(netdev_extended(vf_netdev)->rx_handler, NULL);
+
+#if 1	
+	//ret = netdev_rx_handler_register(vf_netdev,
+	//				 netvsc_vf_handle_frame, ndev);
+
 	if (ret != 0) {
 		netdev_err(vf_netdev,
 			   "can not register netvsc VF receive handler (err = %d)\n",
 			   ret);
 		goto rx_handler_failed;
 	}
+
+
+	//ret = netdev_upper_dev_link(vf_netdev, ndev,
+	//				   NULL, NULL, NULL);
+	ret = netdev_master_upper_dev_link(vf_netdev, ndev);
+
+	if (ret != 0) {
+		netdev_err(vf_netdev,
+			   "can not set master device %s (err = %d)\n",
+			   ndev->name, ret);
+		goto upper_link_failed;
+	}
+
+#endif		
 
 	/* set slave flag before open to prevent IPv6 addrconf */
 	vf_netdev->flags |= IFF_SLAVE;
@@ -2388,7 +2409,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
-    dev_put(vf_netdev);
+	//dev_put(vf_netdev);
 	module_put(THIS_MODULE);
 	return NOTIFY_OK;
 }
