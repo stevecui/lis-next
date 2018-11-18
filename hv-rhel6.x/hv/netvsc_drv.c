@@ -1881,7 +1881,7 @@ rcu_read_lock();
 printk("h_:cpu:%d,%x,len:%d\n",smp_processor_id(),(unsigned int)(uintptr_t)skb,skb->len);
 	u64_stats_update_begin(&pcpu_stats->syncp);
 	if(skb->len<100)
-printk("h_fr:%d,seq:%d\n",pcpu_stats->rx_packets,pcpu_stats->syncp.seq,);
+printk("h_fr:%d\n",(unsigned int)pcpu_stats->rx_packets);
 	pcpu_stats->rx_packets++;
 	pcpu_stats->rx_bytes += skb->len;
 	u64_stats_update_end(&pcpu_stats->syncp);
@@ -2214,7 +2214,7 @@ printk("vf_join:vsc:%p,vf:%p\n",ndev,vf_netdev);
 		netdev_err(vf_netdev,
 			   "can not set master device %s (err = %d)\n",
 			   ndev->name, ret);
-		goto upper_link_failed;
+		goto rx_handler_failed;
 	}
 
 #endif		
