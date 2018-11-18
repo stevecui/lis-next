@@ -2349,7 +2349,7 @@ static int netvsc_vf_up(struct net_device *vf_netdev)
 	/* notify the host to switch the data path. */
 	netvsc_switch_datapath(ndev, true);
 	netdev_info(ndev, "Data path switched to VF: %s\n", vf_netdev->name);
-	netvsc_inject_enable(net_device_ctx);
+//	netvsc_inject_enable(net_device_ctx);
 
 	return NOTIFY_OK;
 }
@@ -2409,7 +2409,11 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 
 	netvsc_inject_disable(net_device_ctx);
 	net_device_ctx->vf_netdev = NULL;
-	//dev_put(vf_netdev);
+
+
+
+ //   dev_put(vf_netdev);
+
 	module_put(THIS_MODULE);
 	return NOTIFY_OK;
 }
