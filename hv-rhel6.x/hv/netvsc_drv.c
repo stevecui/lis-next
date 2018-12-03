@@ -487,7 +487,8 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
 	struct hv_page_buffer page_buf[MAX_PAGE_BUFFER_COUNT];
 	struct hv_page_buffer *pb = page_buf;
         unsigned long flag1;
-spin_lock_irqsave(&sriov_lock,flag1);
+//spin_lock_irqsave(&sriov_lock,flag1);
+spin_lock(&sriov_lock);
 //rcu_read_lock_bh();
 //mutex_lock(&sriov_mutex);
 	/* if VF is present and up then redirect packets
@@ -509,7 +510,8 @@ spin_lock_irqsave(&sriov_lock,flag1);
             ret = netvsc_vf_xmit(net, vf_netdev, skb);
             //mutex_unlock(&sriov_mutex);
 //rcu_read_unlock_bh();
-spin_unlock_irqrestore(&sriov_lock,flag1);
+//spin_unlock_irqrestore(&sriov_lock,flag1);
+spin_unlock(&sriov_lock);
 	    return ret;
 	}
 	printk("con5\n");
@@ -521,7 +523,8 @@ spin_unlock_irqrestore(&sriov_lock,flag1);
 	 */
 //rcu_read_unlock_bh();
 //SPIN_UNiLOck(&sriov_lock);
-spin_unlock_irqrestore(&sriov_lock,flag1);
+//spin_unlock_irqrestore(&sriov_lock,flag1);
+spin_unlock(&sriov_lock);
 	num_data_pgs = netvsc_get_slots(skb) + 2;
 
 	if (unlikely(num_data_pgs > MAX_PAGE_BUFFER_COUNT)) {
