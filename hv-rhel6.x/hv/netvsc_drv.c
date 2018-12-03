@@ -816,7 +816,9 @@ int netvsc_recv_callback(struct net_device *net,
 	int ret = 0;
         unsigned long flag2;
 //spin_lock(&sriov_lock);
-spin_unlock_irqrestore(&sriov_lock,flag2);
+spin_lock_irqsave(&sriov_lock,flag2);
+
+//spin_unlock_irqrestore(&sriov_lock,flag2);
 //rcu_read_lock_bh();
 //mutex_lock(&sriov_mutex);
         //printk("rx0\n");
