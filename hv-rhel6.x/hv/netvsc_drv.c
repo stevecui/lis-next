@@ -56,7 +56,8 @@
 #ifdef CONFIG_NET_POLL_CONTROLLER
 atomic_t netpoll_block_tx = ATOMIC_INIT(0);
 #endif
-
+spinlock_t sriov_lock;
+//struct mutex sriov_mutex;
 static int ring_size = 128;
 module_param(ring_size, int, 0444);
 MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
@@ -249,6 +250,7 @@ static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb,
 static u16 netvsc_select_queue(struct net_device *ndev, struct sk_buff *skb)
 
 {
+printk("_sel_\n");
 #if 0
 	struct net_device_context *ndc = netdev_priv(ndev);
 	struct net_device *vf_netdev;
@@ -484,7 +486,10 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
 	u32 hash;
 	struct hv_page_buffer page_buf[MAX_PAGE_BUFFER_COUNT];
 	struct hv_page_buffer *pb = page_buf;
-
+        unsigned long flag1;
+spin_lock_irqsave(&sriov_lock,flag1);
+//rcu_read_lock_bh();
+//mutex_lock(&sriov_mutex);
 	/* if VF is present and up then redirect packets
 	 * already called with rcu_read_lock_bh
 	 */
@@ -500,16 +505,22 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
 	if (vf_netdev && netif_running(vf_netdev) &&
 	    !netpoll_tx_running(net))
 	{//printk("con4\n");
-	    return netvsc_vf_xmit(net, vf_netdev, skb);
+            ret = netvsc_vf_xmit(net, vf_netdev, skb);
+            //mutex_unlock(&sriov_mutex);
+//rcu_read_unlock_bh();
+spin_unlock_irqrestore(&sriov_lock,flag1);
+	    return ret;
 	}
 	printk("con5\n");
-
+//mutex_unlock(&sriov_mutex);
 	/* We will atmost need two pages to describe the rndis
 	 * header. We can only transmit MAX_PAGE_BUFFER_COUNT number
 	 * of pages in a single packet. If skb is scattered around
 	 * more pages we try linearizing it.
 	 */
-
+//rcu_read_unlock_bh();
+//SPIN_UNiLOck(&sriov_lock);
+spin_unlock_irqrestore(&sriov_lock,flag1);
 	num_data_pgs = netvsc_get_slots(skb) + 2;
 
 	if (unlikely(num_data_pgs > MAX_PAGE_BUFFER_COUNT)) {
@@ -803,6 +814,11 @@ int netvsc_recv_callback(struct net_device *net,
 	struct sk_buff *vf_skb;
 	struct netvsc_stats *rx_stats;
 	int ret = 0;
+        unsigned long flag2;
+//spin_lock(&sriov_lock);
+spin_unlock_irqrestore(&sriov_lock,flag2);
+//rcu_read_lock_bh();
+//mutex_lock(&sriov_mutex);
         //printk("rx0\n");
 	if (!net || net->reg_state != NETREG_REGISTERED)
 	{
@@ -848,9 +864,15 @@ int netvsc_recv_callback(struct net_device *net,
 			++net->stats.rx_dropped;
 			ret = NVSP_STAT_FAIL;
 		}
+//mutex_unlock(&sriov_mutex);
+spin_unlock_irqrestore(&sriov_lock,flag2);
 		atomic_dec(&net_device_ctx->vf_use_cnt);
+
                 //printk("rx8\n");
 		//		rcu_read_unlock();
+//		mutex_unlock(&sriov_mutex);
+//rcu_read_unlock_bh();
+//spin_unlock(&sriov_lock);
 		return ret;
 	}
 
@@ -865,6 +887,8 @@ vf_injection_done:
 	if (unlikely(!skb)) {
          //       printk("rx11\n");
 		++net->stats.rx_dropped;
+//mutex_unlock(&sriov_mutex);
+spin_unlock_irqrestore(&sriov_lock,flag2);
 		return NVSP_STAT_FAIL;
 	}
 	skb_record_rx_queue(skb, q_idx);
@@ -885,7 +909,12 @@ vf_injection_done:
 	napi_gro_receive(&nvchan->napi, skb);
 	//rcu_read_unlock();
         //printk("rx15\n");	
+        //mutex_unlock(&sriov_mutex);
+ // rcu_read_unlock_bh();
+ //spin_unlock(&sriov_lock);
+ spin_unlock_irqrestore(&sriov_lock,flag2);
         return NVSP_STAT_SUCCESS;
+        //return 0;
 }
 
 static void netvsc_get_drvinfo(struct net_device *net,
@@ -2444,6 +2473,7 @@ static int netvsc_probe(struct hv_device *dev,
 
 	netvsc_init_settings(net);
 
+//mutex_init(&sriov_mutex);
 	net_device_ctx = netdev_priv(net);
 	net_device_ctx->device_ctx = dev;
 	net_device_ctx->msg_enable = netif_msg_init(debug, default_msg);
