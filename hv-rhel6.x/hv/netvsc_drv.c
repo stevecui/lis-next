@@ -796,7 +796,7 @@ static struct sk_buff *netvsc_alloc_recv_skb(struct net_device *net,
 
 	return skb;
 }
-//#define RC_LOCK
+#define RC_LOCK
 #define sriov_lock2 sriov_lock
 /*
  * netvsc_recv_callback -  Callback when we receive a packet from the
