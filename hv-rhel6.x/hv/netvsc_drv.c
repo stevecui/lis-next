@@ -488,15 +488,15 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
 	struct hv_page_buffer *pb = page_buf;
         unsigned long flag1;
 //spin_lock_irqsave(&sriov_lock,flag1);
-//spin_lock(&sriov_lock);
+spin_lock(&sriov_lock);
 //rcu_read_lock_bh();
 //mutex_lock(&sriov_mutex);
 	/* if VF is present and up then redirect packets
 	 * already called with rcu_read_lock_bh
 	 */
 	 printk("con0\n");
-/*	vf_netdev = rcu_dereference_bh(net_device_ctx->vf_netdev);
-	if(0 == (uintptr_t)vf_netdev)
+	vf_netdev = net_device_ctx->vf_netdev;
+/*	if(0 == (uintptr_t)vf_netdev)
 		printk("con1\n");
 	if(0!=(uintptr_t)vf_netdev&& 0 == netif_running(vf_netdev))
 		printk("con2\n");
@@ -507,7 +507,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
 	    !netpoll_tx_running(net))
 	{printk("con4\n");
 //spin_lock_irqsave(&sriov_lock,flag1);
-spin_lock(&sriov_lock);
+//spin_lock(&sriov_lock);
             ret = netvsc_vf_xmit(net, vf_netdev, skb);
             //mutex_unlock(&sriov_mutex);
 //rcu_read_unlock_bh();
