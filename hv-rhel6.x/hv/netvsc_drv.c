@@ -800,7 +800,9 @@ static struct sk_buff *netvsc_alloc_recv_skb(struct net_device *net,
  * netvsc_recv_callback -  Callback when we receive a packet from the
  * "wire" on the specified device.
  */
+#ifdef RC_LOCK
 spinlock_t sriov_lock2;
+#endif
 int netvsc_recv_callback(struct net_device *net,
 			 struct vmbus_channel *channel,
 			 void  *data, u32 len,
@@ -817,8 +819,9 @@ int netvsc_recv_callback(struct net_device *net,
 	int ret = 0;
         unsigned long flag2;
 //spin_lock(&sriov_lock);
+#ifdef RC_LOCK
 spin_lock_irqsave(&sriov_lock2,flag2);
-
+#endif
 //spin_unlock_irqrestore(&sriov_lock,flag2);
 //rcu_read_lock_bh();
 //mutex_lock(&sriov_mutex);
@@ -868,7 +871,9 @@ spin_lock_irqsave(&sriov_lock2,flag2);
 			ret = NVSP_STAT_FAIL;
 		}
 //mutex_unlock(&sriov_mutex);
+#ifdef RC_LOCK
 spin_unlock_irqrestore(&sriov_lock2,flag2);
+#endif
 		atomic_dec(&net_device_ctx->vf_use_cnt);
 
                 //printk("rx8\n");
@@ -891,7 +896,9 @@ vf_injection_done:
          //       printk("rx11\n");
 		++net->stats.rx_dropped;
 //mutex_unlock(&sriov_mutex);
+#ifdef RC_LOCK
 spin_unlock_irqrestore(&sriov_lock2,flag2);
+#endif
 		return NVSP_STAT_FAIL;
 	}
 	skb_record_rx_queue(skb, q_idx);
@@ -915,7 +922,9 @@ spin_unlock_irqrestore(&sriov_lock2,flag2);
         //mutex_unlock(&sriov_mutex);
  // rcu_read_unlock_bh();
  //spin_unlock(&sriov_lock);
+ #ifdef RC_LOCK
  spin_unlock_irqrestore(&sriov_lock2,flag2);
+#endif
         return NVSP_STAT_SUCCESS;
         //return 0;
 }
