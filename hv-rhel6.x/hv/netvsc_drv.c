@@ -493,7 +493,7 @@ spin_lock_irqsave(&sriov_lock,flag1);
 	/* if VF is present and up then redirect packets
 	 * already called with rcu_read_lock_bh
 	 */
-	 printk("con0\n");
+/*	 printk("con0\n");
 	vf_netdev = rcu_dereference_bh(net_device_ctx->vf_netdev);
 	if(0 == (uintptr_t)vf_netdev)
 		printk("con1\n");
@@ -501,7 +501,7 @@ spin_lock_irqsave(&sriov_lock,flag1);
 		printk("con2\n");
 	if(0 != netpoll_tx_running(net))
 		printk("con3\n");
-	
+*/	
 	if (vf_netdev && netif_running(vf_netdev) &&
 	    !netpoll_tx_running(net))
 	{//printk("con4\n");
