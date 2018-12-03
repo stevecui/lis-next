@@ -361,7 +361,7 @@ static int netvsc_vf_xmit(struct net_device *net, struct net_device *vf_netdev,
 	int rc;
 
 	skb->dev = vf_netdev;
-	if(skb->len<100)
+//	if(skb->len<100)
 printk("vf_xt:cpu:%d,%x,%x,%x,%d\n",smp_processor_id(),(unsigned int)(uintptr_t)net,(unsigned int)(uintptr_t)vf_netdev,(unsigned int)(uintptr_t)skb,skb->len);
 //printk("vf_xt\n");
 	skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
@@ -370,7 +370,7 @@ printk("vf_xt:cpu:%d,%x,%x,%x,%d\n",smp_processor_id(),(unsigned int)(uintptr_t)
 	if (likely(rc == NET_XMIT_SUCCESS || rc == NET_XMIT_CN)) {
 		struct netvsc_vf_pcpu_stats *pcpu_stats
 			= this_cpu_ptr(ndev_ctx->vf_stats);
-
+printk("pak:%d,c:%d\n",pcpu_stats->tx_packets,smp_processor_id());
 		u64_stats_update_begin(&pcpu_stats->syncp);
 		pcpu_stats->tx_packets++;
 		pcpu_stats->tx_bytes += len;
@@ -488,14 +488,14 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
 	struct hv_page_buffer *pb = page_buf;
         unsigned long flag1;
 //spin_lock_irqsave(&sriov_lock,flag1);
-spin_lock(&sriov_lock);
+//spin_lock(&sriov_lock);
 //rcu_read_lock_bh();
 //mutex_lock(&sriov_mutex);
 	/* if VF is present and up then redirect packets
 	 * already called with rcu_read_lock_bh
 	 */
-/*	 printk("con0\n");
-	vf_netdev = rcu_dereference_bh(net_device_ctx->vf_netdev);
+	 printk("con0\n");
+/*	vf_netdev = rcu_dereference_bh(net_device_ctx->vf_netdev);
 	if(0 == (uintptr_t)vf_netdev)
 		printk("con1\n");
 	if(0!=(uintptr_t)vf_netdev&& 0 == netif_running(vf_netdev))
@@ -505,8 +505,9 @@ spin_lock(&sriov_lock);
 */	
 	if (vf_netdev && netif_running(vf_netdev) &&
 	    !netpoll_tx_running(net))
-	{//printk("con4\n");
+	{printk("con4\n");
 //spin_lock_irqsave(&sriov_lock,flag1);
+spin_lock(&sriov_lock);
             ret = netvsc_vf_xmit(net, vf_netdev, skb);
             //mutex_unlock(&sriov_mutex);
 //rcu_read_unlock_bh();
