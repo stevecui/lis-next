@@ -796,13 +796,14 @@ static struct sk_buff *netvsc_alloc_recv_skb(struct net_device *net,
 
 	return skb;
 }
-
+//#define RC_LOCK
+#define sriov_lock2 sriov_lock
 /*
  * netvsc_recv_callback -  Callback when we receive a packet from the
  * "wire" on the specified device.
  */
 #ifdef RC_LOCK
-spinlock_t sriov_lock2;
+//spinlock_t sriov_lock2;
 #endif
 int netvsc_recv_callback(struct net_device *net,
 			 struct vmbus_channel *channel,
