@@ -530,6 +530,30 @@ struct onmessage_work_context {
 	struct hv_message msg;
 };
 
+/*
+ *  * vmbus_add_channel_kobj - setup a sub-directory under device/channels
+ *   */
+int vmbus_add_channel_kobj(struct hv_device *dev, struct vmbus_channel *channel)
+{
+        struct kobject *kobj = &channel->kobj;
+        u32 relid = channel->offermsg.child_relid;
+        int ret;
+
+        kobj->kset = dev->channels_kset;
+        ret = kobject_init_and_add(kobj, &vmbus_chan_ktype, NULL,
+                                   "%u", relid);
+        if (ret)
+                return ret;
+
+        kobject_uevent(kobj, KOBJ_ADD);
+
+        return 0;
+}
+
+
+
+
+
 static void vmbus_onmessage_work(struct work_struct *work)
 {
 	struct onmessage_work_context *ctx;
@@ -768,6 +792,18 @@ static void vmbus_isr(void)
 		return IRQ_NONE;
 #endif
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifdef CONFIG_HOTPLUG_CPU
 static int hyperv_cpu_disable(void)
