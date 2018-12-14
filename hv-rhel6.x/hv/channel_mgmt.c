@@ -36,7 +36,7 @@
 #include "hyperv_vmbus.h"
 
 static void init_vp_index(struct vmbus_channel *channel, u16 dev_type);
-
+int vmbus_add_channel_kobj(struct hv_device *dev, struct vmbus_channel *channel);
 static const struct vmbus_device vmbus_devs[] = {
 	/* IDE */
 	{ .dev_type = HV_IDE,

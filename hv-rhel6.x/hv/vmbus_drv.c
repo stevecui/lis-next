@@ -107,6 +107,19 @@ static struct resource *fb_mmio;
 static struct resource *hyperv_mmio;
 static struct semaphore hyperv_mmio_lock;
 
+static u8 channel_monitor_group(const struct vmbus_channel *channel)
+{
+	return (u8)channel->offermsg.monitorid / 32;
+}
+
+static u32 channel_pending(const struct vmbus_channel *channel,
+			   const struct hv_monitor_page *monitor_page)
+{
+	u8 monitor_group = channel_monitor_group(channel);
+
+	return monitor_page->trigger_group[monitor_group].pending;
+}
+
 static int vmbus_exists(void)
 {
 	if (hv_acpi_dev == NULL)
@@ -166,6 +179,19 @@ static void get_channel_info(struct hv_device *device,
 		debug_info.outbound.bytes_avail_toread;
 	info->outbound.bytes_avail_towrite =
 		debug_info.outbound.bytes_avail_towrite;
+}
+static u8 channel_monitor_offset(const struct vmbus_channel *channel)
+{
+	return (u8)channel->offermsg.monitorid % 32;
+}
+
+static u32 channel_latency(const struct vmbus_channel *channel,
+			   const struct hv_monitor_page *monitor_page)
+{
+	u8 monitor_group = channel_monitor_group(channel);
+	u8 monitor_offset = channel_monitor_offset(channel);
+
+	return monitor_page->latency[monitor_group][monitor_offset];
 }
 
 /*
@@ -525,9 +551,144 @@ static struct bus_type  hv_bus = {
 static const char *driver_name = "hyperv";
 #endif
 
+
 struct onmessage_work_context {
 	struct work_struct work;
 	struct hv_message msg;
+};
+
+struct vmbus_chan_attribute {
+	struct attribute attr;
+	ssize_t (*show)(const struct vmbus_channel *chan, char *buf);
+	ssize_t (*store)(struct vmbus_channel *chan,
+			 const char *buf, size_t count);
+};
+
+/*
+ * Called when last reference to channel is gone.
+ */
+static void vmbus_chan_release(struct kobject *kobj)
+{
+	struct vmbus_channel *channel
+		= container_of(kobj, struct vmbus_channel, kobj);
+
+	kfree_rcu(channel, rcu);
+}
+
+#define VMBUS_CHAN_ATTR(_name, _mode, _show, _store) \
+	struct vmbus_chan_attribute chan_attr_##_name \
+		= __ATTR(_name, _mode, _show, _store)
+#define VMBUS_CHAN_ATTR_RW(_name) \
+	struct vmbus_chan_attribute chan_attr_##_name = __ATTR_RW(_name)
+#define VMBUS_CHAN_ATTR_RO(_name) \
+	struct vmbus_chan_attribute chan_attr_##_name = __ATTR_RO(_name)
+#define VMBUS_CHAN_ATTR_WO(_name) \
+	struct vmbus_chan_attribute chan_attr_##_name = __ATTR_WO(_name)
+
+	static ssize_t out_mask_show(const struct vmbus_channel *channel, char *buf)
+	{
+		const struct hv_ring_buffer_info *rbi = &channel->outbound;
+	
+		return sprintf(buf, "%u\n", rbi->ring_buffer->interrupt_mask);
+	}
+	static VMBUS_CHAN_ATTR_RO(out_mask);
+	
+	static ssize_t in_mask_show(const struct vmbus_channel *channel, char *buf)
+	{
+		const struct hv_ring_buffer_info *rbi = &channel->inbound;
+	
+		return sprintf(buf, "%u\n", rbi->ring_buffer->interrupt_mask);
+	}
+	static VMBUS_CHAN_ATTR_RO(in_mask);
+	
+	static ssize_t read_avail_show(const struct vmbus_channel *channel, char *buf)
+	{
+		const struct hv_ring_buffer_info *rbi = &channel->inbound;
+	
+		return sprintf(buf, "%u\n", hv_get_bytes_to_read(rbi));
+	}
+	static VMBUS_CHAN_ATTR_RO(read_avail);
+	
+	static ssize_t write_avail_show(const struct vmbus_channel *channel, char *buf)
+	{
+		const struct hv_ring_buffer_info *rbi = &channel->outbound;
+	
+		return sprintf(buf, "%u\n", hv_get_bytes_to_write(rbi));
+	}
+	static VMBUS_CHAN_ATTR_RO(write_avail);
+	
+	static ssize_t show_target_cpu(const struct vmbus_channel *channel, char *buf)
+	{
+		return sprintf(buf, "%u\n", channel->target_cpu);
+	}
+	static VMBUS_CHAN_ATTR(cpu, S_IRUGO, show_target_cpu, NULL);
+	
+	static ssize_t channel_pending_show(const struct vmbus_channel *channel,
+						char *buf)
+	{
+		return sprintf(buf, "%d\n",
+				   channel_pending(channel,
+						   vmbus_connection.monitor_pages[1]));
+	}
+	static VMBUS_CHAN_ATTR(pending, S_IRUGO, channel_pending_show, NULL);
+	
+	static ssize_t channel_latency_show(const struct vmbus_channel *channel,
+						char *buf)
+	{
+		return sprintf(buf, "%d\n",
+				   channel_latency(channel,
+						   vmbus_connection.monitor_pages[1]));
+	}
+	static VMBUS_CHAN_ATTR(latency, S_IRUGO, channel_latency_show, NULL);
+	
+	static ssize_t subchannel_monitor_id_show(const struct vmbus_channel *channel,
+						  char *buf)
+	{
+		return sprintf(buf, "%u\n", channel->offermsg.monitorid);
+	}
+	static VMBUS_CHAN_ATTR(monitor_id, S_IRUGO, subchannel_monitor_id_show, NULL);
+	
+	static ssize_t subchannel_id_show(const struct vmbus_channel *channel,
+					  char *buf)
+	{
+		return sprintf(buf, "%u\n",
+				   channel->offermsg.offer.sub_channel_index);
+	}
+	static VMBUS_CHAN_ATTR_RO(subchannel_id);
+	static ssize_t vmbus_chan_attr_show(struct kobject *kobj,
+				    struct attribute *attr, char *buf)
+{
+	const struct vmbus_chan_attribute *attribute
+		= container_of(attr, struct vmbus_chan_attribute, attr);
+	const struct vmbus_channel *chan
+		= container_of(kobj, struct vmbus_channel, kobj);
+
+	if (!attribute->show)
+		return -EIO;
+
+	return attribute->show(chan, buf);
+}
+	static const struct sysfs_ops vmbus_chan_sysfs_ops = {
+		.show = vmbus_chan_attr_show,
+	};
+
+static struct attribute *vmbus_chan_attrs[] = {
+	&chan_attr_out_mask.attr,
+	&chan_attr_in_mask.attr,
+	&chan_attr_read_avail.attr,
+	&chan_attr_write_avail.attr,
+	&chan_attr_cpu.attr,
+	&chan_attr_pending.attr,
+	&chan_attr_latency.attr,
+	&chan_attr_monitor_id.attr,
+	&chan_attr_subchannel_id.attr,
+	NULL
+};
+
+static struct kobj_type vmbus_chan_ktype = {
+        .sysfs_ops = &vmbus_chan_sysfs_ops,
+        .release = vmbus_chan_release,
+        .default_attrs = vmbus_chan_attrs,
 };
 
 /*
@@ -549,10 +710,6 @@ int vmbus_add_channel_kobj(struct hv_device *dev, struct vmbus_channel *channel)
 
         return 0;
 }
-
-
-
-
 
 static void vmbus_onmessage_work(struct work_struct *work)
 {
@@ -792,17 +949,6 @@ static void vmbus_isr(void)
 		return IRQ_NONE;
 #endif
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 #ifdef CONFIG_HOTPLUG_CPU
