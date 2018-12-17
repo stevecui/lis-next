@@ -775,6 +775,7 @@ printk("hello\n");
 
 	channel->target_cpu = cur_cpu;
 	channel->target_vp = hv_context.vp_index[cur_cpu];
+	spin_unlock(&bind_channel_to_cpu_lock);
 }
 
 static void vmbus_wait_for_unload(void)
