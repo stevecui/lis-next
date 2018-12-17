@@ -263,16 +263,20 @@ void vmbus_disconnect(void)
 	 */
 	vmbus_initiate_unload(false);
 
-        if (vmbus_connection.handle_sub_chan_wq)
-               destroy_workqueue(vmbus_connection.handle_sub_chan_wq);
+    if (vmbus_connection.handle_sub_chan_wq){
+        flush_workqueue(vmbus_connection.handle_sub_chan_wq);
+        destroy_workqueue(vmbus_connection.handle_sub_chan_wq);
+    }		
 
-        if (vmbus_connection.handle_primary_chan_wq)
-               destroy_workqueue(vmbus_connection.handle_primary_chan_wq);
+    if (vmbus_connection.handle_primary_chan_wq){
+        flush_workqueue(vmbus_connection.handle_primary_chan_wq);
+        destroy_workqueue(vmbus_connection.handle_primary_chan_wq);
+    }
 
-        if (vmbus_connection.work_queue){
+    if (vmbus_connection.work_queue){
                 flush_workqueue(vmbus_connection.work_queue);
                 destroy_workqueue(vmbus_connection.work_queue);
-        }
+    }
 
 	if (vmbus_connection.int_page) {
 		free_pages((unsigned long)vmbus_connection.int_page, 0);
