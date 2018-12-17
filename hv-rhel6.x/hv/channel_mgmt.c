@@ -689,7 +689,7 @@ static void init_vp_index(struct vmbus_channel *channel, u16 dev_type)
 		return;
 	}
 
-	spin_lock(&bind_channel_to_cpu_lock);
+	//spin_lock(&bind_channel_to_cpu_lock);
 
 	/*
 	 * Based on the channel affinity policy, we will assign the NUMA
