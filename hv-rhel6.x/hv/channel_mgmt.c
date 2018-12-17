@@ -689,7 +689,7 @@ static void init_vp_index(struct vmbus_channel *channel, u16 dev_type)
 		return;
 	}
 printk("hello\n");
-	//spin_lock(&bind_channel_to_cpu_lock);
+	spin_lock(&bind_channel_to_cpu_lock);
 
 	/*
 	 * Based on the channel affinity policy, we will assign the NUMA
@@ -797,7 +797,7 @@ static void vmbus_wait_for_unload(void)
 	 */
 	while (1) {
 		if (completion_done(&vmbus_connection.unload_event))
-			break;
+`			break;
 
 		for_each_online_cpu(cpu) {
 			struct hv_per_cpu_context *hv_cpu
