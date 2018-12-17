@@ -425,6 +425,8 @@ struct vmbus_channel *relid2channel(u32 relid);
 
 void vmbus_free_channels(void);
 
+int vmbus_add_channel_kobj(struct hv_device *dev, struct vmbus_channel *channel);
+
 /* Connection interface */
 
 int vmbus_connect(void);
