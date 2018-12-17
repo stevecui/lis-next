@@ -797,7 +797,7 @@ static void vmbus_wait_for_unload(void)
 	 */
 	while (1) {
 		if (completion_done(&vmbus_connection.unload_event))
-`			break;
+			break;
 
 		for_each_online_cpu(cpu) {
 			struct hv_per_cpu_context *hv_cpu
