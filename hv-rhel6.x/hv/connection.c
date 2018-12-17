@@ -270,7 +270,7 @@ void vmbus_disconnect(void)
                destroy_workqueue(vmbus_connection.handle_primary_chan_wq);
 
         if (vmbus_connection.work_queue){
-                //flush_workqueue(vmbus_connection.work_queue);
+                //flush_workqueue(vmbus_connection.work_queue);???
                 destroy_workqueue(vmbus_connection.work_queue);
         }
 

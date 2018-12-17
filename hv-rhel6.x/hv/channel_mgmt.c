@@ -775,6 +775,7 @@ static void init_vp_index(struct vmbus_channel *channel, u16 dev_type)
 
 	channel->target_cpu = cur_cpu;
 	channel->target_vp = hv_context.vp_index[cur_cpu];
+	spin_unlock(&bind_channel_to_cpu_lock);
 }
 
 static void vmbus_wait_for_unload(void)
