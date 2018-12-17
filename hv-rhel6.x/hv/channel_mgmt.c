@@ -688,7 +688,7 @@ static void init_vp_index(struct vmbus_channel *channel, u16 dev_type)
 		channel->target_vp = hv_context.vp_index[0];
 		return;
 	}
-
+printk("hello\n");
 	//spin_lock(&bind_channel_to_cpu_lock);
 
 	/*
