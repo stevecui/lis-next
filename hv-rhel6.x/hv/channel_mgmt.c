@@ -474,7 +474,7 @@ static void vmbus_add_channel_work(struct work_struct *work)
 
 	}
 
-        /*
+    /*
          * This state is used to indicate a successful open
          * so that when we do close the channel normally, we
          * can cleanup properly.
@@ -498,7 +498,7 @@ static void vmbus_add_channel_work(struct work_struct *work)
                 return;
         }
 
-        /*
+     /*
          * Start the process of binding the primary channel to the driver
          */
 
@@ -563,9 +563,9 @@ err_deq_chan:
 }
 
  /*
- *  * vmbus_process_offer - Process the offer by creating a channel/device
- *   * associated with this offer
- *    */
+   * vmbus_process_offer - Process the offer by creating a channel/device
+   * associated with this offer
+   */
 static void vmbus_process_offer(struct vmbus_channel *newchannel)
 {
 	struct vmbus_channel *channel;
@@ -691,7 +691,7 @@ static void init_vp_index(struct vmbus_channel *channel, u16 dev_type)
 		channel->target_vp = hv_context.vp_index[0];
 		return;
 	}
-printk("hello\n");
+    printk("hello_hyperv\n");
 	spin_lock(&bind_channel_to_cpu_lock);
 
 	/*
