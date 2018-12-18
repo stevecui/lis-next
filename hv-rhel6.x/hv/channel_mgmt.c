@@ -486,7 +486,10 @@ static void vmbus_add_channel_work(struct work_struct *work)
                 struct hv_device *dev = primary_channel->device_obj;
 
                 if (vmbus_add_channel_kobj(dev, newchannel))
+                {
+                        printk("howare:dev_id:%x\n",newchannel->device_id);
                         goto err_deq_chan;
+                }
 
                if (primary_channel->sc_creation_callback != NULL)
                        primary_channel->sc_creation_callback(newchannel);
