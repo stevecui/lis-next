@@ -1170,6 +1170,7 @@ struct hv_device *vmbus_device_create(const uuid_le *type,
  */
 int vmbus_device_register(struct hv_device *child_device_obj)
 {
+	struct kobject *kobj = &child_device_obj->device.kobj;
 	int ret = 0;
 
 	dev_set_name(&child_device_obj->device, "%pUl",
