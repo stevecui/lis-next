@@ -1191,6 +1191,27 @@ int vmbus_device_register(struct hv_device *child_device_obj)
 		pr_debug("child device %s registered\n",
 			dev_name(&child_device_obj->device));
 
+	child_device_obj->channels_kset = kset_create_and_add("channels",
+							      NULL, kobj);
+	if (!child_device_obj->channels_kset) {
+		ret = -ENOMEM;
+		goto err_dev_unregister;
+	}
+
+	ret = vmbus_add_channel_kobj(child_device_obj,
+				     child_device_obj->channel);
+	if (ret) {
+		pr_err("Unable to register primary channeln");
+		goto err_kset_unregister;
+	}
+
+	return 0;
+
+err_kset_unregister:
+	kset_unregister(child_device_obj->channels_kset);
+
+err_dev_unregister:
+	device_unregister(&child_device_obj->device);
 	return ret;
 }
 
