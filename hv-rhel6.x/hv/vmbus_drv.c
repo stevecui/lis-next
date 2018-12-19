@@ -618,7 +618,7 @@ static ssize_t write_avail_show(const struct vmbus_channel *channel, char *buf)
 static VMBUS_CHAN_ATTR_RO(write_avail);
 
 static ssize_t show_target_cpu(const struct vmbus_channel *channel, char *buf)
-{
+{printk("stc:target\n");
 	return sprintf(buf, "%u\n", channel->target_cpu);
 }
 static VMBUS_CHAN_ATTR(cpu, S_IRUGO, show_target_cpu, NULL);
