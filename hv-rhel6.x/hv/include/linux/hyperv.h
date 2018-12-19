@@ -873,19 +873,20 @@ struct vmbus_channel {
 	 * Support per-channel state for use by vmbus drivers.
 	 */
 	void *per_channel_state;
+
 	/*
 	 * To support per-cpu lookup mapping of relid to channel,
 	 * link up channels based on their CPU affinity.
 	 */
 	struct list_head percpu_list;
 	
-        /*
+    /*
          * For sysfs per-channel properties.
          */
-        struct kobject                  kobj;
-		struct rcu_head rcu;
+    struct kobject  kobj;
+	struct rcu_head rcu;
 
-        /*
+    /*
 	 * For performance critical channels (storage, networking
 	 * etc,), Hyper-V has a mechanism to enhance the throughput
 	 * at the expense of latency:

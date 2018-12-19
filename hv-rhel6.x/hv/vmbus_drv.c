@@ -707,7 +707,7 @@ int vmbus_add_channel_kobj(struct hv_device *dev, struct vmbus_channel *channel)
                 return ret;
 
         kobject_uevent(kobj, KOBJ_ADD);
-        printk("wmdsj:dev_id:%x\n",channel->device_id);
+        printk("wmdsj:cpu:%d,dev_id:%x,ven_id:%x\n",smp_processor_id(),channel->device_id,channel->vendor_id);
         return 0;
 }
 

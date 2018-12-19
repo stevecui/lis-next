@@ -479,33 +479,33 @@ static void vmbus_add_channel_work(struct work_struct *work)
          * so that when we do close the channel normally, we
          * can cleanup properly.
          */
-        newchannel->state = CHANNEL_OPEN_STATE;
+    newchannel->state = CHANNEL_OPEN_STATE;
 
-        if (primary_channel != NULL) {
-                /* newchannel is a sub-channel. */
-                struct hv_device *dev = primary_channel->device_obj;
+    if (primary_channel != NULL) {
+        /* newchannel is a sub-channel. */
+        struct hv_device *dev = primary_channel->device_obj;
 
-                if (vmbus_add_channel_kobj(dev, newchannel))
-                {
-                        printk("howare:dev_id:%x\n",newchannel->device_id);
-                        goto err_deq_chan;
-                }
-
-               if (primary_channel->sc_creation_callback != NULL)
-                       primary_channel->sc_creation_callback(newchannel);
-
-                newchannel->probe_done = true;
-                return;
+        if (vmbus_add_channel_kobj(dev, newchannel))
+        {
+            printk("howare:dev_id:%x\n",newchannel->device_id);
+            goto err_deq_chan;
         }
 
-     /*
+        if (primary_channel->sc_creation_callback != NULL)
+            primary_channel->sc_creation_callback(newchannel);
+
+        newchannel->probe_done = true;
+        return;
+    }
+
+    /*
          * Start the process of binding the primary channel to the driver
          */
-
 	newchannel->device_obj = vmbus_device_create(
 		&newchannel->offermsg.offer.if_type,
 		&newchannel->offermsg.offer.if_instance,
 		newchannel);
+
 	if (!newchannel->device_obj)
 		goto err_deq_chan;
 
@@ -674,8 +674,8 @@ static void init_vp_index(struct vmbus_channel *channel, u16 dev_type)
 	u32 cur_cpu;
 	bool perf_chn = vmbus_devs[dev_type].perf_device;
 	struct vmbus_channel *primary = channel->primary_channel;
-        int next_node;
-        struct cpumask available_mask;
+    int next_node;
+    struct cpumask available_mask;
 	struct cpumask *alloced_mask;
 
 	if ((vmbus_proto_version == VERSION_WS2008) ||
@@ -724,8 +724,7 @@ static void init_vp_index(struct vmbus_channel *channel, u16 dev_type)
 	         * reset the alloced map.
 	         */
 		cpumask_clear(alloced_mask);
-
-        }
+    }
 
 	cpumask_xor(&available_mask, alloced_mask,
                    cpumask_of_node(primary->numa_node));
