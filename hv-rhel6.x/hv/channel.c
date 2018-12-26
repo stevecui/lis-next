@@ -105,8 +105,13 @@ void vmbus_get_debug_info(struct vmbus_channel *channel,
 			monitorpage->parameter[monitor_group]
 				[monitor_offset].connectionid.u.id;
 
+	printk("vgbi_0:ch->inb:%x\n",(unsigned int)(uintptr_t)&channel->inbound);
 	hv_ringbuffer_get_debuginfo(&channel->inbound, &debuginfo->inbound);
+
+	printk("vgbi_1:ch->outb:%x\n",(unsigned int)(uintptr_t)&channel->outbound);
 	hv_ringbuffer_get_debuginfo(&channel->outbound, &debuginfo->outbound);
+
+	printk("vgbi_2\n");
 }
 
 /*

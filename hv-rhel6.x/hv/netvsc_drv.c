@@ -2471,19 +2471,30 @@ static int netvsc_probe(struct hv_device *dev,
 	dev_info(&dev->device, "real num tx,rx queues:%u, %u\n",
 		 net->real_num_tx_queues, nvdev->num_chn);
 
+#ifdef CUIHF_DEBUG
         rtnl_lock();
         ret = register_netdevice(net);
+#else
+        ret = register_netdev(net);
+#endif
+
 	if (ret != 0) {
 		pr_err("Unable to register netdev.\n");
 		goto register_failed;
 	}
 
-        list_add(&net_device_ctx->list, &netvsc_dev_list);
-        rtnl_unlock();
-        return 0;
+#ifdef CUIHF_DEBUG
+    list_add(&net_device_ctx->list, &netvsc_dev_list);
+    rtnl_unlock();
+    return 0;
+#endif
 
 register_failed:
+
+#ifdef CUIHF_DEBUG
 	rtnl_unlock();
+#endif
+
 	rndis_filter_device_remove(dev, nvdev);
 rndis_failed:
 	free_percpu(net_device_ctx->vf_stats);
