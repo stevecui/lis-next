@@ -167,6 +167,9 @@ hv_get_ringbuffer_availbytes(const struct hv_ring_buffer_info *rbi,
 			     u32 *read, u32 *write)
 {
 	u32 read_loc, write_loc, dsize;
+        printk("rbi:%x\n",(unsigned int)(uintptr_t)rbi);
+        if(rbi != NULL)
+             printk("rbi->ring_buf:%x\n",(unsigned int)(uintptr_t)rbi->ring_buffer);
 
 	/* Capture the read/write indices before they changed */
 	read_loc = rbi->ring_buffer->read_index;
