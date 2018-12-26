@@ -208,7 +208,7 @@ void netvsc_channel_cb(void *context);
 int netvsc_poll(struct napi_struct *napi, int budget);
 
 int rndis_set_subchannel(struct net_device *ndev, struct netvsc_device *nvdev);
-int rndis_filter_open(struct netvsc_device *nvdev);
+
 int rndis_filter_close(struct netvsc_device *nvdev);
 struct netvsc_device *rndis_filter_device_add(struct hv_device *dev,
 					      struct netvsc_device_info *info);
@@ -885,6 +885,9 @@ struct net_device_context {
 	struct netvsc_device *nvdev;
         /* list of netvsc net_devices */
         struct list_head list;
+		
+	 /* list of netvsc net_devices */
+	 struct list_head list;
 	/* reconfigure work */
 	struct delayed_work dwork;
 	/* last reconfig time */
