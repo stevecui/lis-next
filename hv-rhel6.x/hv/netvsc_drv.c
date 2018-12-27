@@ -2472,9 +2472,24 @@ static int netvsc_probe(struct hv_device *dev,
 		 net->real_num_tx_queues, nvdev->num_chn);
 
 #ifdef CUIHF_DEBUG
-        //rtnl_lock();
-//        ret = register_netdevice(net);
-ret = register_netdev(net);
+        rtnl_lock();
+		/*
+		  * If the name is a format string the caller wants us to do a
+	        * name allocation.
+		 */
+		if (strchr(dev->name, '%')) {
+			err = dev_alloc_name(dev, dev->name);
+			if (err < 0)
+			{
+			    ret = err;
+				goto register_failed;
+			}
+		}
+
+		ret = register_netdevice(net);
+
+
+        //ret = register_netdev(net);
 #else
         ret = register_netdev(net);
 #endif
@@ -2486,7 +2501,7 @@ ret = register_netdev(net);
 
 #ifdef CUIHF_DEBUG
 //    list_add(&net_device_ctx->list, &netvsc_dev_list);
-    //rtnl_unlock();
+    rtnl_unlock();
     return 0;
 #else
     return ret;
@@ -2495,7 +2510,7 @@ ret = register_netdev(net);
 register_failed:
 
 #ifdef CUIHF_DEBUG
-//	rtnl_unlock();
+	rtnl_unlock();
 #endif
 
 	rndis_filter_device_remove(dev, nvdev);
