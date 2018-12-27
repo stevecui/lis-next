@@ -2477,7 +2477,7 @@ static int netvsc_probe(struct hv_device *dev,
 		  * If the name is a format string the caller wants us to do a
 	        * name allocation.
 		 */
-		if (strchr(dev->name, '%')) {
+		if (strchr(net->name, '%')) {
 			err = dev_alloc_name(net, net->name);
 			if (err < 0)
 			{
