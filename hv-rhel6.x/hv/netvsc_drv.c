@@ -2386,6 +2386,7 @@ static int netvsc_probe(struct hv_device *dev,
 	struct bonding *bond_dev;
 	unsigned int size_all;
 	int ret = -ENOMEM;
+	int err = 0;
 
         size_all = ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN)+ \
 		           ALIGN(sizeof(struct bonding), NETDEV_ALIGN);
