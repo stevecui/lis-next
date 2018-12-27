@@ -2473,7 +2473,8 @@ static int netvsc_probe(struct hv_device *dev,
 
 #ifdef CUIHF_DEBUG
         //rtnl_lock();
-        ret = register_netdevice(net);
+//        ret = register_netdevice(net);
+ret = register_netdev(net);
 #else
         ret = register_netdev(net);
 #endif
