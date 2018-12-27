@@ -2375,7 +2375,7 @@ static int netvsc_unregister_vf(struct net_device *vf_netdev)
 	module_put(THIS_MODULE);
 	return NOTIFY_OK;
 }
-
+#define CUIHF_DEBUG
 static int netvsc_probe(struct hv_device *dev,
 			const struct hv_vmbus_device_id *dev_id)
 {
@@ -2472,7 +2472,7 @@ static int netvsc_probe(struct hv_device *dev,
 		 net->real_num_tx_queues, nvdev->num_chn);
 
 #ifdef CUIHF_DEBUG
-        rtnl_lock();
+        //rtnl_lock();
         ret = register_netdevice(net);
 #else
         ret = register_netdev(net);
@@ -2484,15 +2484,17 @@ static int netvsc_probe(struct hv_device *dev,
 	}
 
 #ifdef CUIHF_DEBUG
-    list_add(&net_device_ctx->list, &netvsc_dev_list);
-    rtnl_unlock();
+//    list_add(&net_device_ctx->list, &netvsc_dev_list);
+    //rtnl_unlock();
     return 0;
+#else
+    return ret;
 #endif
 
 register_failed:
 
 #ifdef CUIHF_DEBUG
-	rtnl_unlock();
+//	rtnl_unlock();
 #endif
 
 	rndis_filter_device_remove(dev, nvdev);
