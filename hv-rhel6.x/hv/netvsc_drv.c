@@ -2478,7 +2478,7 @@ static int netvsc_probe(struct hv_device *dev,
 	        * name allocation.
 		 */
 		if (strchr(dev->name, '%')) {
-			err = dev_alloc_name(dev, dev->name);
+			err = dev_alloc_name(net, net->name);
 			if (err < 0)
 			{
 			    ret = err;
