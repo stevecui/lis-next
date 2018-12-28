@@ -2059,7 +2059,7 @@ printk("master:%p,vf:%p\n",bond_dev,slave_dev);
 	new_slave->link_failure_count = 0;
 
 	netvsc_bond_update_speed_duplex(new_slave);
-i
+
 	new_slave->last_rx = jiffies -
 		(msecs_to_jiffies(bond->params.arp_interval) + 1);
 	
