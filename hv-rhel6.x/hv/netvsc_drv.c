@@ -2403,7 +2403,7 @@ static int netvsc_probe(struct hv_device *dev,
 
 	net_device_ctx = netdev_priv(net);
 
-printk("list0:%p\n",&net_device_ctx->list);
+printk("list0:%p,size_net_ctx:%x,size_bond:%x\n",&net_device_ctx->list,sizeof(struct net_device_context),sizeof(struct bonding));
 	net_device_ctx->device_ctx = dev;
 	net_device_ctx->msg_enable = netif_msg_init(debug, default_msg);
 	bond_dev = netdev_priv(net) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
