@@ -146,28 +146,28 @@ void hv_ringbuffer_get_debuginfo(const struct hv_ring_buffer_info *ring_info,
 {
 	u32 bytes_avail_towrite;
 	u32 bytes_avail_toread;
-    printk("hrgd_0\n");
+    //printk("hrgd_0\n");
 	if (ring_info->ring_buffer) {
 		hv_get_ringbuffer_availbytes(ring_info,
 					&bytes_avail_toread,
 					&bytes_avail_towrite);
-		printk("hrgd_1\n");
+		//printk("hrgd_1\n");
 
 		debug_info->bytes_avail_toread = bytes_avail_toread;
-		printk("hrgd_2\n");
+		//printk("hrgd_2\n");
 		debug_info->bytes_avail_towrite = bytes_avail_towrite;
-		printk("hrgd_3\n");
+		//printk("hrgd_3\n");
 		debug_info->current_read_index =
 			ring_info->ring_buffer->read_index;
-		printk("hrgd_4\n");
+		//printk("hrgd_4\n");
 		debug_info->current_write_index =
 			ring_info->ring_buffer->write_index;
-		printk("hrgd_5\n");
+		//printk("hrgd_5\n");
 		debug_info->current_interrupt_mask =
 			ring_info->ring_buffer->interrupt_mask;
-		printk("hrgd_6\n");
+		//printk("hrgd_6\n");
 	}
-	printk("hrgd_7\n");
+	//printk("hrgd_7\n");
 }
 EXPORT_SYMBOL_GPL(hv_ringbuffer_get_debuginfo);
 

@@ -167,23 +167,23 @@ hv_get_ringbuffer_availbytes(const struct hv_ring_buffer_info *rbi,
 			     u32 *read, u32 *write)
 {
 	u32 read_loc, write_loc, dsize;
-        printk("hrgd_0_0:rbi:%x\n",(unsigned int)(uintptr_t)rbi);
-        if(rbi != NULL)
-             printk("hrgd_0_1:rbi->ring_buf:%x\n",(unsigned int)(uintptr_t)rbi->ring_buffer);
+        //printk("hrgd_0_0:rbi:%x\n",(unsigned int)(uintptr_t)rbi);
+        //if(rbi != NULL)
+             //printk("hrgd_0_1:rbi->ring_buf:%x\n",(unsigned int)(uintptr_t)rbi->ring_buffer);
 
 	/* Capture the read/write indices before they changed */
 	read_loc = rbi->ring_buffer->read_index;
-	printk("hrgd_0_2\n");
+	//printk("hrgd_0_2\n");
 	write_loc = rbi->ring_buffer->write_index;
-	printk("hrgd_0_3\n");
+	//printk("hrgd_0_3\n");
 	dsize = rbi->ring_datasize;
-	printk("hrgd_0_4\n");
+	//printk("hrgd_0_4\n");
 
 	*write = write_loc >= read_loc ? dsize - (write_loc - read_loc) :
 		read_loc - write_loc;
-	printk("hrgd_0_5\n");
+	//printk("hrgd_0_5\n");
 	*read = dsize - *write;
-	printk("hrgd_0_6\n");
+	//printk("hrgd_0_6\n");
 }
 
 static inline u32 hv_get_bytes_to_read(const struct hv_ring_buffer_info *rbi)
