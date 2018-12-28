@@ -63,3 +63,4 @@ grubby --update-kernel "/boot/vmlinuz-$KERNEL_VERSION" --args=disable_mtrr_trim
 [ $? -eq 0 ] || exit 1
 
 echo "Completed!"
+reboot

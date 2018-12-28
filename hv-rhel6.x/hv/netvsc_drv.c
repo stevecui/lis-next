@@ -2054,12 +2054,12 @@ int netvsc_bond_enslave(struct net_device *bond_dev, struct net_device *slave_de
 	netvsc_bond_add_vlans_on_slave(bond, slave_dev);
 
 	prev_slave = bond_last_slave(bond);
-
+printk("master:%p,vf:%p\n",bond_dev,slave_dev);
 	new_slave->delay = 0;
 	new_slave->link_failure_count = 0;
 
 	netvsc_bond_update_speed_duplex(new_slave);
-
+i
 	new_slave->last_rx = jiffies -
 		(msecs_to_jiffies(bond->params.arp_interval) + 1);
 	
@@ -2402,6 +2402,8 @@ static int netvsc_probe(struct hv_device *dev,
 	netvsc_init_settings(net);
 
 	net_device_ctx = netdev_priv(net);
+
+printk("list0:%p\n",&net_device_ctx->list);
 	net_device_ctx->device_ctx = dev;
 	net_device_ctx->msg_enable = netif_msg_init(debug, default_msg);
 	bond_dev = netdev_priv(net) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
@@ -2503,6 +2505,7 @@ static int netvsc_probe(struct hv_device *dev,
 
 #ifdef CUIHF_DEBUG
     list_add(&net_device_ctx->list, &netvsc_dev_list);
+printk("list1:%p\n",&net_device_ctx->list);
     rtnl_unlock();
     return 0;
 #else
