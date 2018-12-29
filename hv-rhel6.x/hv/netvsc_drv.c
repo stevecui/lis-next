@@ -2253,12 +2253,14 @@ static int netvsc_register_vf(struct net_device *vf_netdev)
 	 */
 	/* deviation from upstream - we are using dev_addr rather than perm_addr */
 	ndev = get_netvsc_bymac(vf_netdev->dev_addr);
+	printk("nrv_0:ndev:%x\n",(unsigned int)(uintptr_t)ndev);
 	if (!ndev)
 		return NOTIFY_DONE;
 
 	net_device_ctx = netdev_priv(ndev);
 	netvsc_dev = net_device_ctx->nvdev;
         bond_dev = netdev_priv(ndev) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
+			printk("nrv_1:ndev:%x,bond_dev:%x\n",(unsigned int)(uintptr_t)ndev,(unsigned int)(uintptr_t)bond_dev);
 	if (!netvsc_dev || net_device_ctx->vf_netdev)
 		return NOTIFY_DONE;
 	net_device_ctx->vf_netdev = vf_netdev;
@@ -2403,7 +2405,7 @@ static int netvsc_probe(struct hv_device *dev,
 
 	net_device_ctx = netdev_priv(net);
 
-printk("list0:%p,size_net_ctx:%x,size_bond:%x\n",&net_device_ctx->list,sizeof(struct net_device_context),sizeof(struct bonding));
+printk("list0:%p,size_all:%x,size_net_ctx:%x,size_bond:%x\n",&net_device_ctx->list,size_all,sizeof(struct net_device_context),sizeof(struct bonding));
 	net_device_ctx->device_ctx = dev;
 	net_device_ctx->msg_enable = netif_msg_init(debug, default_msg);
 	bond_dev = netdev_priv(net) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
