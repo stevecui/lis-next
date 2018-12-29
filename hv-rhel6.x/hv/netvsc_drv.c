@@ -63,7 +63,7 @@ atomic_t netpoll_block_tx = ATOMIC_INIT(0);
 static int ring_size = 128;
 module_param(ring_size, int, 0444);
 MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
-static LIST_HEAD(netvsc_dev_list);
+//static LIST_HEAD(netvsc_dev_list);
 
 static const u32 default_msg = NETIF_MSG_DRV | NETIF_MSG_PROBE |
 		NETIF_MSG_LINK | NETIF_MSG_IFUP |
@@ -325,7 +325,7 @@ static int netvsc_vf_xmit(struct net_device *net, struct net_device *vf_netdev,
 	int rc;
 
 	skb->dev = vf_netdev;
-        printk("vf_xt\n");
+        //printk("vf_xt\n");
 	skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
 
 	rc = dev_queue_xmit(skb);
@@ -1594,7 +1594,8 @@ static void netvsc_notify_peers(struct work_struct *wrk)
 
 static struct net_device *get_netvsc_bymac(const u8 *mac)
 {
-        struct net_device_context *ndev_ctx;
+#if 0 
+       struct net_device_context *ndev_ctx;
 
         list_for_each_entry(ndev_ctx, &netvsc_dev_list, list) {
                 struct net_device *dev = hv_get_drvdata(ndev_ctx->device_ctx);
@@ -1605,6 +1606,24 @@ static struct net_device *get_netvsc_bymac(const u8 *mac)
 	}
 
 	return NULL;
+#endif
+        struct net_device *dev;
+
+        ASSERT_RTNL();
+
+        for_each_netdev(&init_net, dev) {
+                if (dev->netdev_ops != &device_ops)
+                        continue;       /* not a netvsc device */
+
+                /* deviation from upstream - we are using dev_addr, not perm_addr */
+                if (ether_addr_equal(mac, dev->dev_addr))
+                {
+                        printk("gnbmac:dev:%x\n",(unsigned int)(uintptr_t)dev);
+                        return dev;
+                }
+        }
+
+        return NULL;
 }
 
 static struct net_device *get_netvsc_byref(const struct net_device *vf_netdev)
@@ -2506,7 +2525,7 @@ printk("list0:%p,size_all:%x,size_net_ctx:%x,size_bond:%x\n",&net_device_ctx->li
 	}
 
 #ifdef CUIHF_DEBUG
-    list_add(&net_device_ctx->list, &netvsc_dev_list);
+    //list_add(&net_device_ctx->list, &netvsc_dev_list);
 printk("list1:%p\n",&net_device_ctx->list);
     rtnl_unlock();
     return 0;
