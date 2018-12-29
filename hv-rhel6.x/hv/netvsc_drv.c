@@ -2424,7 +2424,6 @@ static int netvsc_probe(struct hv_device *dev,
 
 	net_device_ctx = netdev_priv(net);
 
-printk("list0:%p,size_all:%x,size_net_ctx:%x,size_bond:%x\n",&net_device_ctx->list,size_all,sizeof(struct net_device_context),sizeof(struct bonding));
 	net_device_ctx->device_ctx = dev;
 	net_device_ctx->msg_enable = netif_msg_init(debug, default_msg);
 	bond_dev = netdev_priv(net) + ALIGN(sizeof(struct net_device_context), NETDEV_ALIGN);
@@ -2525,8 +2524,6 @@ printk("list0:%p,size_all:%x,size_net_ctx:%x,size_bond:%x\n",&net_device_ctx->li
 	}
 
 #ifdef CUIHF_DEBUG
-    //list_add(&net_device_ctx->list, &netvsc_dev_list);
-printk("list1:%p\n",&net_device_ctx->list);
     rtnl_unlock();
     return 0;
 #else
@@ -2589,7 +2586,6 @@ static int netvsc_remove(struct hv_device *dev)
                 rndis_filter_device_remove(dev, nvdev);
 
         unregister_netdevice(net);
-	list_del(&ndev_ctx->list);
 
 	rtnl_unlock();
         rcu_read_unlock();
