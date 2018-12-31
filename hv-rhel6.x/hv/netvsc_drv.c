@@ -61,6 +61,9 @@
 #endif
 
 #define RING_SIZE_MIN 64
+#define RETRY_US_LO    5000
+#define RETRY_US_HI    10000
+#define RETRY_MAX      2000    /* >10 sec */
 #define LINKCHANGE_INT (2 * HZ)
 #ifdef CONFIG_NET_POLL_CONTROLLER
 atomic_t netpoll_block_tx = ATOMIC_INIT(0);
@@ -107,8 +110,10 @@ static int netvsc_open(struct net_device *net)
 	netif_tx_wake_all_queues(net);
 
 	rdev = nvdev->extension;
-	if (!rdev->link_state)
+	if (!rdev->link_state) {
 		netif_carrier_on(net);
+		netif_tx_wake_all_queues(net);
+	}
 
 	if (vf_netdev) {
 		/* Setting synthetic device up transparently sets
@@ -126,65 +131,71 @@ static int netvsc_open(struct net_device *net)
 
 }
 
-static int netvsc_close(struct net_device *net)
+static int netvsc_wait_until_empty(struct netvsc_device *nvdev)
 {
-	struct net_device_context *net_device_ctx = netdev_priv(net);
-	struct net_device *vf_netdev
-			= rtnl_dereference(net_device_ctx->vf_netdev);
-	struct netvsc_device *nvdev = net_device_ctx->nvdev;
-	int ret = 0;
-	u32 aread, i, msec = 10, retry = 0, retry_max = 20;
-	struct vmbus_channel *chn;
+        unsigned int retry = 0;
+        int i;
 
-	netif_tx_disable(net);
+        /* Ensure pending bytes in ring are read */
+        for (;;) {
+                u32 aread = 0;
+                for (i = 0; i < nvdev->num_chn; i++) {
+                        struct vmbus_channel *chn
+                                = nvdev->chan_table[i].channel;
+ 
+                        if (!chn)
+                                 continue;
 
-	/* No need to close rndis filter if it is removed already */
-	if (!nvdev)
-		goto out;
-
-	ret = rndis_filter_close(nvdev);
-	if (ret != 0) {
-		netdev_err(net, "unable to close device (ret %d).\n", ret);
-		return ret;
-	}
-
-	/* Ensure pending bytes in ring are read */
-	while (true) {
-		aread = 0;
-		for (i = 0; i < nvdev->num_chn; i++) {
-			chn = nvdev->chan_table[i].channel;
-			if (!chn)
-				continue;
-
-			aread = hv_get_bytes_to_read(&chn->inbound);
-			if (aread)
-				break;
+                        /* make sure receive not running now */
+                        napi_synchronize(&nvdev->chan_table[i].napi);
+ 
+                        aread = hv_get_bytes_to_read(&chn->inbound);
+                        if (aread)
+                                break;
 
 			aread = hv_get_bytes_to_read(&chn->outbound);
 			if (aread)
 				break;
 		}
 
-		retry++;
-		if (retry > retry_max || aread == 0)
-			break;
+                if (aread == 0)
+                        return 0;
 
-		msleep(msec);
+                if (++retry > RETRY_MAX)
+                        return -ETIMEDOUT;
 
-		if (msec < 1000)
-			msec *= 2;
-	}
+                usleep_range(RETRY_US_LO, RETRY_US_HI);
+        }
+}
 
-	if (aread) {
-		netdev_err(net, "Ring buffer not empty after closing rndis\n");
-		ret = -ETIMEDOUT;
-	}
+static int netvsc_close(struct net_device *net)
+{
+        struct net_device_context *net_device_ctx = netdev_priv(net);
+        struct net_device *vf_netdev
+                = rtnl_dereference(net_device_ctx->vf_netdev);
+        struct netvsc_device *nvdev = rtnl_dereference(net_device_ctx->nvdev);
+        int ret;
 
-out:
-	if (vf_netdev)
-		dev_close(vf_netdev);
+        netif_tx_disable(net);
 
-	return ret;
+        /* No need to close rndis filter if it is removed already */
+        if (!nvdev)
+                return 0;
+
+        ret = rndis_filter_close(nvdev);
+        if (ret != 0) {
+                netdev_err(net, "unable to close device (ret %d).\n", ret);
+                return ret;
+        }
+
+        ret = netvsc_wait_until_empty(nvdev);
+        if (ret)
+                netdev_err(net, "Ring buffer not empty after closing rndis\n");
+
+        if (vf_netdev)
+                dev_close(vf_netdev);
+
+        return ret;
 }
 
 static void *init_ppi_data(struct rndis_message *msg, u32 ppi_size,
@@ -1435,6 +1446,88 @@ static void netvsc_get_drvinfo(struct net_device *net,
 	strlcpy(info->fw_version, "N/A", sizeof(info->fw_version));
 }
 
+static int netvsc_detach(struct net_device *ndev,
+                        struct netvsc_device *nvdev)
+{
+       struct net_device_context *ndev_ctx = netdev_priv(ndev);
+       struct hv_device *hdev = ndev_ctx->device_ctx;
+       int ret;
+
+       /* Don't try continuing to try and setup sub channels */
+       if (cancel_work_sync(&nvdev->subchan_work))
+               nvdev->num_chn = 1;
+
+       /* If device was up (receiving) then shutdown */
+       if (netif_running(ndev)) {
+               netif_tx_disable(ndev);
+
+               ret = rndis_filter_close(nvdev);
+               if (ret) {
+                       netdev_err(ndev,
+                                  "unable to close device (ret %d).\n", ret);
+                       return ret;
+               }
+
+               ret = netvsc_wait_until_empty(nvdev);
+               if (ret) {
+                       netdev_err(ndev,
+                                  "Ring buffer not empty after closing rndis\n");
+                       return ret;
+               }
+       }
+
+       netif_device_detach(ndev);
+
+       rndis_filter_device_remove(hdev, nvdev);
+
+       return 0;
+}
+
+
+static int netvsc_attach(struct net_device *ndev,
+                        struct netvsc_device_info *dev_info)
+{
+       struct net_device_context *ndev_ctx = netdev_priv(ndev);
+       struct hv_device *hdev = ndev_ctx->device_ctx;
+       struct netvsc_device *nvdev;
+       struct rndis_device *rdev;
+       int ret;
+
+       nvdev = rndis_filter_device_add(hdev, dev_info);
+       if (IS_ERR(nvdev))
+               return PTR_ERR(nvdev);
+
+       if (nvdev->num_chn > 1) {
+               ret = rndis_set_subchannel(ndev, nvdev);
+
+               /* if unavailable, just proceed with one queue */
+               if (ret) {
+                       nvdev->max_chn = 1;
+                       nvdev->num_chn = 1;
+               }
+       }
+
+       /* In any case device is now ready */
+       netif_device_attach(ndev);
+
+
+       /* Note: enable and attach happen when sub-channels setup */
+       netif_carrier_off(ndev);
+
+       if (netif_running(ndev)) {
+               ret = rndis_filter_open(nvdev);
+               if (ret)
+                       return ret;
+
+               rdev = nvdev->extension;
+               if (!rdev->link_state)
+                       netif_carrier_on(ndev);
+       }
+
+       return 0;
+}
+
+
 #if (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(7,0))
 static void netvsc_get_channels(struct net_device *net,
 				struct ethtool_channels *channel)
@@ -1452,12 +1545,10 @@ static int netvsc_set_channels(struct net_device *net,
 			       struct ethtool_channels *channels)
 {
 	struct net_device_context *net_device_ctx = netdev_priv(net);
-	struct hv_device *dev = net_device_ctx->device_ctx;
 	struct netvsc_device *nvdev = net_device_ctx->nvdev;
 	unsigned int orig, count = channels->combined_count;
 	struct netvsc_device_info device_info;
-	bool was_opened;
-	int ret = 0;
+	int ret;
 
 	/* We do not support separate count for rx, tx, or other */
 	if (count == 0 ||
@@ -1477,28 +1568,20 @@ static int netvsc_set_channels(struct net_device *net,
 		return -EINVAL;
 	orig = nvdev->num_chn;
 
-	was_opened = rndis_filter_opened(nvdev);
-	if (was_opened)
-		rndis_filter_close(nvdev);
-
-	rndis_filter_device_remove(dev, nvdev);
+        ret = netvsc_detach(net, nvdev);
+        if (ret)
+                return ret;
 
 	memset(&device_info, 0, sizeof(device_info));
 	device_info.num_chn = count;
 	device_info.ring_size = ring_size;
 
-	nvdev = rndis_filter_device_add(dev, &device_info);
-	if (IS_ERR(nvdev)) {
+        ret = netvsc_attach(net, &device_info);
+        if (ret) {
 		device_info.num_chn = orig;
-		rndis_filter_device_add(dev, &device_info);
+                if (netvsc_attach(net, &device_info))
+                        netdev_err(net, "restoring channel setting failed\n");
 	}
-
-	if (was_opened)
-		rndis_filter_open(nvdev);
-
-	/* We may have missed link change notifications */
-	net_device_ctx->last_reconfig = 0;
-	schedule_delayed_work(&net_device_ctx->dwork, 0);
 
 	return ret;
 }
@@ -1561,11 +1644,9 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
 	struct net_device_context *ndevctx = netdev_priv(ndev);
 	struct net_device *vf_netdev = rtnl_dereference(ndevctx->vf_netdev);
 	struct netvsc_device *nvdev = ndevctx->nvdev;
-	struct hv_device *hdev = ndevctx->device_ctx;
 	int orig_mtu = ndev->mtu;
 	struct netvsc_device_info device_info;
 	int limit = ETH_DATA_LEN;
-	bool was_opened;
 	int ret = 0;
 
 	if (!nvdev || nvdev->destroy)
@@ -1584,38 +1665,29 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
 			return ret;
 	}
 
-	netif_device_detach(ndev);
-	was_opened = rndis_filter_opened(nvdev);
-	if (was_opened)
-		rndis_filter_close(nvdev);
-
 	memset(&device_info, 0, sizeof(device_info));
 	device_info.ring_size = ring_size;
 	device_info.num_chn = nvdev->num_chn;
 
-	rndis_filter_device_remove(hdev, nvdev);
+        ret = netvsc_detach(ndev, nvdev);
+        if (ret)
+                goto rollback_vf;
 
 	ndev->mtu = mtu;
 
-	nvdev = rndis_filter_device_add(hdev, &device_info);
-	if (IS_ERR(nvdev)) {
-		ret = PTR_ERR(nvdev);
+        ret = netvsc_attach(ndev, &device_info);
+        if (ret)
+                goto rollback;
 
-		/* Attempt rollback to original MTU */
-		ndev->mtu = orig_mtu;
-		rndis_filter_device_add(hdev, &device_info);
-
-		if (vf_netdev)
-			dev_set_mtu(vf_netdev, orig_mtu);
-	}
-
-	if (was_opened)
-		rndis_filter_open(nvdev);
-
-	netif_device_attach(ndev);
-
-	/* We may have missed link change notifications */
-	schedule_delayed_work(&ndevctx->dwork, 0);
+	return 0;
+rollback:
+        /* Attempt rollback to original MTU */
+        ndev->mtu = orig_mtu;
+        if (netvsc_attach(ndev, &device_info))
+                netdev_err(ndev, "restoring mtu failed\n");
+rollback_vf:
+        if (vf_netdev)
+                dev_set_mtu(vf_netdev, orig_mtu);
 
 	return ret;
 }
@@ -2342,6 +2414,8 @@ static int netvsc_probe(struct hv_device *dev,
 	struct netvsc_device_info device_info;
 	struct netvsc_device *nvdev;
 	int ret = -ENOMEM;
+	int err = 0;
+	
 #if (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(6,7)) 
 	struct bonding *bond_dev;
 	unsigned int size_all;
@@ -2417,6 +2491,9 @@ static int netvsc_probe(struct hv_device *dev,
 	}
 	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
 
+    if (nvdev->num_chn > 1)
+		schedule_work(&nvdev->subchan_work);
+
 #ifdef NOTYET
 	/* hw_features computed in rndis_filter_device_add */
 	net->features = net->hw_features |
@@ -2434,15 +2511,32 @@ static int netvsc_probe(struct hv_device *dev,
 	dev_info(&dev->device, "real num tx,rx queues:%u, %u\n",
 		 net->real_num_tx_queues, nvdev->num_chn);
 
-	ret = register_netdev(net);
+        rtnl_lock();
+	/*
+	 * If the name is a format string the caller wants us to do a
+	 * name allocation.
+	 */
+	if (strchr(net->name, '%')) {
+	    err = dev_alloc_name(net, net->name);
+	    if (err < 0)
+	    {
+	        ret = err;
+		goto register_failed;
+	    }
+	}
+
+	ret = register_netdevice(net);
+
 	if (ret != 0) {
 		pr_err("Unable to register netdev.\n");
 		goto register_failed;
 	}
 
-	return ret;
+        rtnl_unlock();
+        return 0;
 
 register_failed:
+	rtnl_unlock();
 	rndis_filter_device_remove(dev, nvdev);
 rndis_failed:
 	free_percpu(net_device_ctx->vf_stats);
@@ -2455,8 +2549,9 @@ no_net:
 
 static int netvsc_remove(struct hv_device *dev)
 {
-	struct net_device *net;
 	struct net_device_context *ndev_ctx;
+        struct net_device *vf_netdev, *net;
+        struct netvsc_device *nvdev;
 
 	net = hv_get_drvdata(dev);
 
@@ -2467,20 +2562,34 @@ static int netvsc_remove(struct hv_device *dev)
 
 	ndev_ctx = netdev_priv(net);
 
-	netif_device_detach(net);
-
 	cancel_delayed_work_sync(&ndev_ctx->dwork);
 
-	unregister_netdev(net);
+
+        rcu_read_lock();
+        nvdev = rcu_dereference(ndev_ctx->nvdev);
+ 
+        if  (nvdev)
+                cancel_work_sync(&nvdev->subchan_work);
+
+ 	unregister_netdev(net);
 
 	/*
 	 * Call to the vsc driver to let it know that the device is being
 	 * removed. Also blocks mtu and channel changes.
 	 */
 	rtnl_lock();
-	rndis_filter_device_remove(dev,
-				   rtnl_dereference(ndev_ctx->nvdev));
+
+        vf_netdev = rtnl_dereference(ndev_ctx->vf_netdev);
+        if (vf_netdev)
+                netvsc_unregister_vf(vf_netdev);
+
+        if (nvdev)
+                rndis_filter_device_remove(dev, nvdev);
+
+        unregister_netdevice(net);
+
 	rtnl_unlock();
+        rcu_read_unlock();
 
 	hv_set_drvdata(dev, NULL);
 
