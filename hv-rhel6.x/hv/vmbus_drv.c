@@ -86,7 +86,7 @@ struct hv_device_info {
 	struct hv_dev_port_info inbound;
 	struct hv_dev_port_info outbound;
 };
-
+#if 0
 #if defined(RHEL_RELEASE_VERSION) && (RHEL_RELEASE_CODE <= RHEL_RELEASE_VERSION(6,3))
 
 /*
@@ -134,6 +134,8 @@ struct hv_device_info {
 #define kfree_rcu(ptr, rcu_head)					\
 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
 #endif
+#endif
+
 
 int hyperv_panic_event(struct notifier_block *nb,
                         unsigned long event, void *ptr)
@@ -619,8 +621,9 @@ static void vmbus_chan_release(struct kobject *kobj)
 {
 	struct vmbus_channel *channel
 		= container_of(kobj, struct vmbus_channel, kobj);
-
+#if defined(RHEL_RELEASE_VERSION) && (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(6,4))
 	kfree_rcu(channel, rcu);
+#endif	
 }
 
 #define VMBUS_CHAN_ATTR(_name, _mode, _show, _store) \
