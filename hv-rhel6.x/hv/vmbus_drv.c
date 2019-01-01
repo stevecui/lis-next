@@ -651,8 +651,10 @@ static VMBUS_CHAN_ATTR_RO(in_mask);
 
 static ssize_t read_avail_show(const struct vmbus_channel *channel, char *buf)
 {
-	const struct hv_ring_buffer_info *rbi = &channel->inbound;
-
+	const struct hv_ring_buffer_info *rbi;
+printk("read_0:chan:%x\n",(unsigned int)(uintptr_t)channel);
+rbi = &channel->inbound;
+printk("read_1:rbi:%x\n",(unsigned int)(uintptr_t)rbi);
 	return sprintf(buf, "%u\n", hv_get_bytes_to_read(rbi));
 }
 static VMBUS_CHAN_ATTR_RO(read_avail);

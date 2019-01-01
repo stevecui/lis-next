@@ -181,13 +181,18 @@ hv_get_ringbuffer_availbytes(const struct hv_ring_buffer_info *rbi,
 static inline u32 hv_get_bytes_to_read(const struct hv_ring_buffer_info *rbi)
 {
 	u32 read_loc, write_loc, dsize, read;
-
+printk("get_0\n");;
 	dsize = rbi->ring_datasize;
+	printk("get_1\n");;
+
 	read_loc = rbi->ring_buffer->read_index;
+	printk("get_2\n");;
 	write_loc = READ_ONCE(rbi->ring_buffer->write_index);
+	printk("get_3\n");;
 
 	read = write_loc >= read_loc ? (write_loc - read_loc) :
 		(dsize - read_loc) + write_loc;
+		printk("get_4\n");;
 
 	return read;
 }
