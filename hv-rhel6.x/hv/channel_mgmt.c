@@ -361,14 +361,21 @@ static void percpu_channel_enq(void *arg)
 	struct hv_per_cpu_context *hv_cpu
 		= this_cpu_ptr(hv_context.cpu_context);
 
+#if defined(RHEL_RELEASE_VERSION) && (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(6,4)) 
+	list_add_tail_rcu(&channel->percpu_list, &hv_cpu->chan_list);
+#else
 	list_add_tail(&channel->percpu_list, &hv_cpu->chan_list);
+#endif
 }
 
 static void percpu_channel_deq(void *arg)
 {
 	struct vmbus_channel *channel = arg;
-
+#if defined(RHEL_RELEASE_VERSION) && (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(6,4)) 
+	list_del_rcu(&channel->percpu_list);
+#else
 	list_del(&channel->percpu_list);
+#endif
 }
 
 static void vmbus_release_relid(u32 relid)
