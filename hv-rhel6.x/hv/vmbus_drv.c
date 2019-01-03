@@ -89,6 +89,8 @@ struct hv_device_info {
 
 #if defined(RHEL_RELEASE_VERSION) && (RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6,4))
 
+#define __is_kfree_rcu_offset(offset) ((offset) < 4096)
+
 /*
  * Helper macro for kfree_rcu() to prevent argument-expansion eyestrain.
  */
