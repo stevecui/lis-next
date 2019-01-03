@@ -451,7 +451,7 @@ void vmbus_free_channels(void)
 
 
 
-
+#if 0
 /* Note: the function can run concurrently for primary/sub channels. */
 static void vmbus_add_channel_work(struct work_struct *work)
 {
@@ -561,6 +561,7 @@ err_deq_chan:
 
 	free_channel(newchannel);
 }
+#endif
 
 /*
  * vmbus_process_offer - Process the offer by creating a channel/device
