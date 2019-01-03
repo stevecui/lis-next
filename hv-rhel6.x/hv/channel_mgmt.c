@@ -450,6 +450,118 @@ void vmbus_free_channels(void)
 }
 
 
+
+
+/* Note: the function can run concurrently for primary/sub channels. */
+static void vmbus_add_channel_work(struct work_struct *work)
+{
+	struct vmbus_channel *newchannel =
+		container_of(work, struct vmbus_channel, add_channel_work);
+	struct vmbus_channel *primary_channel = newchannel->primary_channel;
+	unsigned long flags;
+	u16 dev_type;
+	int ret;
+
+	dev_type = hv_get_dev_type(newchannel);
+
+	init_vp_index(newchannel, dev_type);
+
+	if (newchannel->target_cpu != get_cpu()) {
+		put_cpu();
+		smp_call_function_single(newchannel->target_cpu,
+					 percpu_channel_enq,
+					 newchannel, true);
+	} else {
+		percpu_channel_enq(newchannel);
+		put_cpu();
+
+	}
+
+    /*
+         * This state is used to indicate a successful open
+         * so that when we do close the channel normally, we
+         * can cleanup properly.
+         */
+    newchannel->state = CHANNEL_OPEN_STATE;
+
+    if (primary_channel != NULL) {
+        /* newchannel is a sub-channel. */
+        struct hv_device *dev = primary_channel->device_obj;
+
+        if (vmbus_add_channel_kobj(dev, newchannel))
+            goto err_deq_chan;
+        
+        if (primary_channel->sc_creation_callback != NULL)
+            primary_channel->sc_creation_callback(newchannel);
+
+        newchannel->probe_done = true;
+        return;
+    }
+
+    /*
+         * Start the process of binding the primary channel to the driver
+         */
+	newchannel->device_obj = vmbus_device_create(
+		&newchannel->offermsg.offer.if_type,
+		&newchannel->offermsg.offer.if_instance,
+		newchannel);
+
+	if (!newchannel->device_obj)
+		goto err_deq_chan;
+
+	newchannel->device_obj->device_id = dev_type;
+
+	/*
+	 * Add the new device to the bus. This will kick off device-driver
+	 * binding which eventually invokes the device driver's AddDevice()
+	 * method.
+	 */
+	ret = vmbus_device_register(newchannel->device_obj);
+
+	if (ret != 0) {
+		pr_err("unable to add child device object (relid %d)\n",
+			newchannel->offermsg.child_relid);
+		kfree(newchannel->device_obj);
+		goto err_deq_chan;
+	}
+
+	newchannel->probe_done = true;
+	return;
+
+err_deq_chan:
+	mutex_lock(&vmbus_connection.channel_mutex);
+
+	/*
+	 * We need to set the flag, otherwise
+	 * vmbus_onoffer_rescind() can be blocked.
+	 */
+	newchannel->probe_done = true;
+
+	if (primary_channel == NULL) {
+		list_del(&newchannel->listentry);
+	} else {
+		spin_lock_irqsave(&primary_channel->lock, flags);
+		list_del(&newchannel->sc_list);
+		spin_unlock_irqrestore(&primary_channel->lock, flags);
+	}
+
+	mutex_unlock(&vmbus_connection.channel_mutex);
+
+	if (newchannel->target_cpu != get_cpu()) {
+		put_cpu();
+		smp_call_function_single(newchannel->target_cpu,
+					 percpu_channel_deq,
+					 newchannel, true);
+	} else {
+		percpu_channel_deq(newchannel);
+		put_cpu();
+	}
+
+	vmbus_release_relid(newchannel->offermsg.child_relid);
+
+	free_channel(newchannel);
+}
+
 /*
  * vmbus_process_offer - Process the offer by creating a channel/device
  * associated with this offer
