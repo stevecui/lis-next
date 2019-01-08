@@ -1228,6 +1228,17 @@ void vmbus_device_unregister(struct hv_device *device_obj)
 {
 	pr_debug("child device %s unregistered\n",
 		dev_name(&device_obj->device));
+	/*
+	 * kset_unregister() in RHEL 7.4 and older lacks this patch:
+	 * https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=35a5fe695b07ae899510ad76fdf0aeaef85fe951
+	 * So we have to manually add the kobject_del() to properly decrease the
+	 * device refcnt, otherwise the device can't be thoroughly destroyed.
+	 */
+#if (RHEL_RELEASE_CODE <= RHEL_RELEASE_VERSION(7,4))
+		kobject_del(&device_obj->channels_kset->kobj);
+#endif
+	
+		kset_unregister(device_obj->channels_kset);
 
 	/*
 	 * Kick off the process of unregistering the device.
