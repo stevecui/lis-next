@@ -1220,6 +1220,27 @@ err_dev_unregister:
 	return ret;
 }
 
+/**
+ *  * kobject_del - unlink kobject from hierarchy.
+ *   * @kobj: object.
+ *    */
+void hv_kobject_del(struct kobject *kobj)
+{
+	struct kernfs_node *sd;
+
+	if (!kobj)
+		return;
+
+	sd = kobj->sd;
+	sysfs_remove_dir(kobj);
+	sysfs_put(sd);
+
+	kobj->state_in_sysfs = 0;
+	kobj_kset_leave(kobj);
+	kobject_put(kobj->parent);
+	kobj->parent = NULL;
+}
+
 /*
  * vmbus_device_unregister - Remove the specified child device
  * from the vmbus.
@@ -1235,7 +1256,7 @@ void vmbus_device_unregister(struct hv_device *device_obj)
 	 * device refcnt, otherwise the device can't be thoroughly destroyed.
 	 */
 #if (RHEL_RELEASE_CODE <= RHEL_RELEASE_VERSION(7,4))
-//		kobject_del(&device_obj->channels_kset->kobj);
+		hv_kobject_del(&device_obj->channels_kset->kobj);
 #endif
 	
 		kset_unregister(device_obj->channels_kset);
