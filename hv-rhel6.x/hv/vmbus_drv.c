@@ -1220,6 +1220,7 @@ err_dev_unregister:
 	return ret;
 }
 
+#if 0
 /*
  * kernfs_node - the building block of kernfs hierarchy.  Each and every
  * kernfs node is represented by single kernfs_node.  Most fields are
@@ -1261,13 +1262,13 @@ struct kernfs_node {
 	unsigned int		ino;
 	//struct kernfs_iattrs	*iattr;
 };
-
-
+#endif
 
 /**
  *  * kobject_del - unlink kobject from hierarchy.
  *   * @kobj: object.
  *    */
+/*
 void hv_kobject_del(struct kobject *kobj)
 {
 	struct kernfs_node *sd;
@@ -1284,6 +1285,7 @@ void hv_kobject_del(struct kobject *kobj)
 	kobject_put(kobj->parent);
 	kobj->parent = NULL;
 }
+*/
 
 /*
  * vmbus_device_unregister - Remove the specified child device
@@ -1300,7 +1302,7 @@ void vmbus_device_unregister(struct hv_device *device_obj)
 	 * device refcnt, otherwise the device can't be thoroughly destroyed.
 	 */
 #if (RHEL_RELEASE_CODE <= RHEL_RELEASE_VERSION(7,4))
-		hv_kobject_del(&device_obj->channels_kset->kobj);
+		kobject_del(&device_obj->channels_kset->kobj);
 #endif
 	
 		kset_unregister(device_obj->channels_kset);
