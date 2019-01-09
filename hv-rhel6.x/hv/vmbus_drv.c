@@ -1280,7 +1280,7 @@ void hv_kobject_del(struct kobject *kobj)
 	sysfs_put(sd);
 
 	kobj->state_in_sysfs = 0;
-	kobj_kset_leave(kobj);
+	kobj_kset_leave((struct kobject *)kobj);
 	kobject_put(kobj->parent);
 	kobj->parent = NULL;
 }
