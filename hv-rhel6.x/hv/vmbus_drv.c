@@ -1303,7 +1303,7 @@ void vmbus_device_unregister(struct hv_device *device_obj)
 	 * So we have to manually add the kobject_del() to properly decrease the
 	 * device refcnt, otherwise the device can't be thoroughly destroyed.
 	 */
-	 printk("vdu_0:name:%s\n",(&device_obj->channels_kset->kobj)->sd->s_name);
+	 //printk("vdu_0:name:%s\n",(&device_obj->channels_kset->kobj)->sd->s_name);
 #if (RHEL_RELEASE_CODE <= RHEL_RELEASE_VERSION(7,4))
 		kobject_del(&device_obj->channels_kset->kobj);
 #endif
