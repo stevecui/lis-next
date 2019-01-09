@@ -45,6 +45,8 @@
 #include <linux/efi.h>
 #include "hyperv_vmbus.h"
 #include <linux/random.h>
+#include <include/linux/kobject.h>
+
 
 #if (RHEL_RELEASE_CODE <= RHEL_RELEASE_VERSION(6,5))
 bool using_null_legacy_pic = false;
