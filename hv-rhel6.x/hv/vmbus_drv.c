@@ -1220,6 +1220,50 @@ err_dev_unregister:
 	return ret;
 }
 
+/*
+ * kernfs_node - the building block of kernfs hierarchy.  Each and every
+ * kernfs node is represented by single kernfs_node.  Most fields are
+ * private to kernfs and shouldn't be accessed directly by kernfs users.
+ *
+ * As long as s_count reference is held, the kernfs_node itself is
+ * accessible.  Dereferencing elem or any other outer entity requires
+ * active reference.
+ */
+struct kernfs_node {
+	atomic_t		count;
+	atomic_t		active;
+#ifdef CONFIG_DEBUG_LOCK_ALLOC
+	struct lockdep_map	dep_map;
+#endif
+	/*
+	 * Use kernfs_get_parent() and kernfs_name/path() instead of
+	 * accessing the following two fields directly.  If the node is
+	 * never moved to a different parent, it is safe to access the
+	 * parent directly.
+	 */
+	struct kernfs_node	*parent;
+	const char		*name;
+
+	struct rb_node		rb;
+
+	const void		*ns;	/* namespace tag */
+	unsigned int		hash;	/* ns + name hash */
+	union {
+		struct kernfs_elem_dir		dir;
+		struct kernfs_elem_symlink	symlink;
+		struct kernfs_elem_attr		attr;
+	};
+
+	void			*priv;
+
+	unsigned short		flags;
+	umode_t			mode;
+	unsigned int		ino;
+	//struct kernfs_iattrs	*iattr;
+};
+
+
+
 /**
  *  * kobject_del - unlink kobject from hierarchy.
  *   * @kobj: object.
