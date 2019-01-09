@@ -2566,7 +2566,7 @@ no_stats:
 no_net:
 	return ret;
 }
-struct sk_buff
+//struct sk_buff
 
 static int netvsc_remove(struct hv_device *dev)
 {
