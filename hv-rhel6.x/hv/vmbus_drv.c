@@ -1235,7 +1235,7 @@ void vmbus_device_unregister(struct hv_device *device_obj)
 	 * device refcnt, otherwise the device can't be thoroughly destroyed.
 	 */
 #if (RHEL_RELEASE_CODE <= RHEL_RELEASE_VERSION(7,4))
-		kobject_del(&device_obj->channels_kset->kobj);
+//		kobject_del(&device_obj->channels_kset->kobj);
 #endif
 	
 		kset_unregister(device_obj->channels_kset);

@@ -2567,7 +2567,7 @@ static int netvsc_remove(struct hv_device *dev)
 
     rtnl_lock();
         nvdev = rcu_dereference(ndev_ctx->nvdev);
- 
+printk("netvsc_rm\n");
         if  (nvdev)
                 cancel_work_sync(&nvdev->subchan_work);
 
