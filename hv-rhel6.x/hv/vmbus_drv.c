@@ -1248,12 +1248,12 @@ struct kernfs_node {
 
 	const void		*ns;	/* namespace tag */
 	unsigned int		hash;	/* ns + name hash */
-	union {
+/*	union {
 		struct kernfs_elem_dir		dir;
 		struct kernfs_elem_symlink	symlink;
 		struct kernfs_elem_attr		attr;
 	};
-
+*/
 	void			*priv;
 
 	unsigned short		flags;
