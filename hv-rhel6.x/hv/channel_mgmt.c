@@ -640,6 +640,12 @@ static void vmbus_process_offer(struct vmbus_channel *newchannel)
 	INIT_WORK(&newchannel->add_channel_work, vmbus_add_channel_work);
 	wq = fnew ? vmbus_connection.handle_primary_chan_wq :
 		    vmbus_connection.handle_sub_chan_wq;
+
+	if(fnew != NULL)
+		printk("vmbus_process_offer:primary chan\n");
+	if(fnew == NULL)
+		printk("vmbus_process_offer:sub-chan\n");
+	
 	queue_work(wq, &newchannel->add_channel_work);
 }
 
