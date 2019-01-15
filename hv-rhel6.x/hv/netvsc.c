@@ -587,6 +587,28 @@ static void netvsc_disconnect_vsp(struct hv_device *device)
 	netvsc_destroy_buf(device);
 }
 
+static void netvsc_teardown_recv_gpadl(struct hv_device *device,
+				       struct netvsc_device *net_device,
+				       struct net_device *ndev)
+{
+	int ret;
+
+	if (net_device->recv_buf_gpadl_handle) {
+		ret = vmbus_teardown_gpadl(device->channel,
+					   net_device->recv_buf_gpadl_handle);
+
+		/* If we failed here, we might as well return and have a leak
+		 * rather than continue and a bugchk
+		 */
+		if (ret != 0) {
+			netdev_err(ndev,
+				   "unable to teardown receive buffer's gpadl\n");
+			return;
+		}
+		net_device->recv_buf_gpadl_handle = 0;
+	}
+}
+
 /*
  * netvsc_device_remove - Callback when the root bus device is removed
  */
@@ -598,9 +620,19 @@ void netvsc_device_remove(struct hv_device *device)
 		= rtnl_dereference(net_device_ctx->nvdev);
 	int i;
 
-	netvsc_disconnect_vsp(device);
+	/*
+	 * Revoke receive buffer. If host is pre-Win2016 then tear down
+	 * receive buffer GPADL. Do the same for send buffer.
+	 */
+	netvsc_revoke_recv_buf(device, net_device, ndev);
+	if (vmbus_proto_version < VERSION_WIN10)
+		netvsc_teardown_recv_gpadl(device, net_device, ndev);
 
-	net_device_ctx->nvdev = NULL;
+	netvsc_revoke_send_buf(device, net_device, ndev);
+	if (vmbus_proto_version < VERSION_WIN10)
+		netvsc_teardown_send_gpadl(device, net_device, ndev);
+
+	RCU_INIT_POINTER(net_device_ctx->nvdev, NULL);
 
 	/* And disassociate NAPI context from device */
 	for (i = 0; i < net_device->num_chn; i++)
@@ -615,8 +647,18 @@ void netvsc_device_remove(struct hv_device *device)
 	/* Now, we can close the channel safely */
 	vmbus_close(device->channel);
 
+	/*
+	 * If host is Win2016 or higher then we do the GPADL tear down
+	 * here after VMBus is closed.
+	*/
+	if (vmbus_proto_version >= VERSION_WIN10) {
+		netvsc_teardown_recv_gpadl(device, net_device, ndev);
+		netvsc_teardown_send_gpadl(device, net_device, ndev);
+	}
+
 	/* Release all resources */
-	free_netvsc_device(net_device);
+	free_netvsc_device_rcu(net_device);
+
 }
 
 #define RING_AVAIL_PERCENT_HIWATER 20
