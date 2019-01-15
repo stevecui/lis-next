@@ -586,6 +586,56 @@ static void netvsc_disconnect_vsp(struct hv_device *device)
 {
 	netvsc_destroy_buf(device);
 }
+static void netvsc_revoke_send_buf(struct hv_device *device,
+				   struct netvsc_device *net_device,
+				   struct net_device *ndev)
+{
+	struct nvsp_message *revoke_packet;
+	int ret;
+
+	/* Deal with the send buffer we may have setup.
+	 * If we got a  send section size, it means we received a
+	 * NVSP_MSG1_TYPE_SEND_SEND_BUF_COMPLETE msg (ie sent
+	 * NVSP_MSG1_TYPE_SEND_SEND_BUF msg) therefore, we need
+	 * to send a revoke msg here
+	 */
+	if (net_device->send_section_cnt) {
+		/* Send the revoke receive buffer */
+		revoke_packet = &net_device->revoke_packet;
+		memset(revoke_packet, 0, sizeof(struct nvsp_message));
+
+		revoke_packet->hdr.msg_type =
+			NVSP_MSG1_TYPE_REVOKE_SEND_BUF;
+		revoke_packet->msg.v1_msg.revoke_send_buf.id =
+			NETVSC_SEND_BUFFER_ID;
+
+		trace_nvsp_send(ndev, revoke_packet);
+
+		ret = vmbus_sendpacket(device->channel,
+				       revoke_packet,
+				       sizeof(struct nvsp_message),
+				       (unsigned long)revoke_packet,
+				       VM_PKT_DATA_INBAND, 0);
+
+		/* If the failure is because the channel is rescinded;
+		 * ignore the failure since we cannot send on a rescinded
+		 * channel. This would allow us to properly cleanup
+		 * even when the channel is rescinded.
+		 */
+		if (device->channel->rescind)
+			ret = 0;
+
+		/* If we failed here, we might as well return and
+		 * have a leak rather than continue and a bugchk
+		 */
+		if (ret != 0) {
+			netdev_err(ndev, "unable to send "
+				   "revoke send buffer to netvsp\n");
+			return;
+		}
+		net_device->send_section_cnt = 0;
+	}
+}
 
 static void netvsc_teardown_send_gpadl(struct hv_device *device,
 				       struct netvsc_device *net_device,
