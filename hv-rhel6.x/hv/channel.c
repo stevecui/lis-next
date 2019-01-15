@@ -638,6 +638,23 @@ void vmbus_reset_channel_cb(struct vmbus_channel *channel)
 	tasklet_enable(&channel->callback_event);
 }
 
+/* vmbus_free_ring - drop mapping of ring buffer */
+void vmbus_free_ring(struct vmbus_channel *channel)
+{
+	hv_ringbuffer_cleanup(&channel->outbound);
+	hv_ringbuffer_cleanup(&channel->inbound);
+
+	if (channel->ringbuffer_page) {
+		__free_pages(channel->ringbuffer_page,
+			     get_order(channel->ringbuffer_pagecount
+				       << PAGE_SHIFT));
+		channel->ringbuffer_page = NULL;
+	}
+}
+EXPORT_SYMBOL_GPL(vmbus_free_ring);
+
+
+
 static int vmbus_close_internal(struct vmbus_channel *channel)
 {
 	struct vmbus_channel_close_channel *msg;
