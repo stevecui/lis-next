@@ -611,11 +611,8 @@ static void reset_channel_cb(void *arg)
 	channel->onchannel_callback = NULL;
 }
 
-static int vmbus_close_internal(struct vmbus_channel *channel)
+void vmbus_reset_channel_cb(struct vmbus_channel *channel)
 {
-	struct vmbus_channel_close_channel *msg;
-	int ret;
-
 	/*
 	 * vmbus_on_event(), running in the per-channel tasklet, can race
 	 * with vmbus_close_internal() in the case of SMP guest, e.g., when
@@ -623,24 +620,11 @@ static int vmbus_close_internal(struct vmbus_channel *channel)
 	 * could be freeing the ring_buffer pages, so here we must stop it
 	 * first.
 	 */
-
 	tasklet_disable(&channel->callback_event);
 
-	/*
-	 * In case a device driver's probe() fails (e.g.,
-	 * util_probe() -> vmbus_open() returns -ENOMEM) and the device is
-	 * rescinded later (e.g., we dynamically disable Integrated Service
-	 * in Hyper-V Manager), the driver's remove() invokes vmbus_close():
-	 * here we should skip most of the below cleanup work.
-	 */
-	if (channel->state != CHANNEL_OPENED_STATE) {
-		return -EINVAL;
-		goto out;
-	}
-
-	channel->state = CHANNEL_OPEN_STATE;
 	channel->sc_creation_callback = NULL;
-	/* Stop callback and cancel the timer asap */
+
+	/* Stop the callback asap */
 	if (channel->target_cpu != get_cpu()) {
 		put_cpu();
 		smp_call_function_single(channel->target_cpu, reset_channel_cb,
@@ -650,6 +634,29 @@ static int vmbus_close_internal(struct vmbus_channel *channel)
 		put_cpu();
 	}
 
+	/* Re-enable tasklet for use on re-open */
+	tasklet_enable(&channel->callback_event);
+}
+
+static int vmbus_close_internal(struct vmbus_channel *channel)
+{
+	struct vmbus_channel_close_channel *msg;
+	int ret;
+
+	vmbus_reset_channel_cb(channel);
+
+	/*
+	 * In case a device driver's probe() fails (e.g.,
+	 * util_probe() -> vmbus_open() returns -ENOMEM) and the device is
+	 * rescinded later (e.g., we dynamically disable an Integrated Service
+	 * in Hyper-V Manager), the driver's remove() invokes vmbus_close():
+	 * here we should skip most of the below cleanup work.
+	 */
+	if (channel->state != CHANNEL_OPENED_STATE)
+		return -EINVAL;
+
+	channel->state = CHANNEL_OPEN_STATE;
+
 	/* Send a closing message */
 
 	msg = &channel->close_msg.msg;
@@ -657,7 +664,8 @@ static int vmbus_close_internal(struct vmbus_channel *channel)
 	msg->header.msgtype = CHANNELMSG_CLOSECHANNEL;
 	msg->child_relid = channel->offermsg.child_relid;
 
-	ret = vmbus_post_msg(msg, sizeof(struct vmbus_channel_close_channel), true);
+	ret = vmbus_post_msg(msg, sizeof(struct vmbus_channel_close_channel),
+			     true);
 
 	trace_vmbus_close_internal(msg, ret);
 
@@ -667,77 +675,77 @@ static int vmbus_close_internal(struct vmbus_channel *channel)
 		 * If we failed to post the close msg,
 		 * it is perhaps better to leak memory.
 		 */
-		goto out;
 	}
 
 	/* Tear down the gpadl for the channel's ring buffer */
-	if (channel->ringbuffer_gpadlhandle) {
+	else if (channel->ringbuffer_gpadlhandle) {
 		ret = vmbus_teardown_gpadl(channel,
 					   channel->ringbuffer_gpadlhandle);
-		if (ret && !channel->rescind) {
+		if (ret) {
 			pr_err("Close failed: teardown gpadl return %d\n", ret);
 			/*
 			 * If we failed to teardown gpadl,
 			 * it is perhaps better to leak memory.
 			 */
-			goto out;
 		}
+
+		channel->ringbuffer_gpadlhandle = 0;
 	}
 
-	/* Cleanup the ring buffers for this channel */
-	hv_ringbuffer_cleanup(&channel->outbound);
-	hv_ringbuffer_cleanup(&channel->inbound);
-
-	free_pages((unsigned long)channel->ringbuffer_pages,
-		get_order(channel->ringbuffer_pagecount * PAGE_SIZE));
-
-out:
-	/* re-enable tasklet for use on re-open */
-	tasklet_enable(&channel->callback_event);
 	return ret;
 }
+
+/* disconnect ring - close all channels */
+int vmbus_disconnect_ring(struct vmbus_channel *channel)
+{
+	struct vmbus_channel *cur_channel, *tmp;
+	unsigned long flags;
+	LIST_HEAD(list);
+	int ret;
+
+	if (channel->primary_channel != NULL)
+		return -EINVAL;
+
+	/* Snapshot the list of subchannels */
+	spin_lock_irqsave(&channel->lock, flags);
+	list_splice_init(&channel->sc_list, &list);
+	spin_unlock_irqrestore(&channel->lock, flags);
+
+	list_for_each_entry_safe(cur_channel, tmp, &list, sc_list) {
+		if (cur_channel->rescind)
+			wait_for_completion(&cur_channel->rescind_event);
+
+		mutex_lock(&vmbus_connection.channel_mutex);
+		if (vmbus_close_internal(cur_channel) == 0) {
+			vmbus_free_ring(cur_channel);
+
+			if (cur_channel->rescind)
+				hv_process_channel_removal(cur_channel);
+		}
+		mutex_unlock(&vmbus_connection.channel_mutex);
+	}
+
+	/*
+	 * Now close the primary.
+	 */
+	mutex_lock(&vmbus_connection.channel_mutex);
+	ret = vmbus_close_internal(channel);
+	mutex_unlock(&vmbus_connection.channel_mutex);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(vmbus_disconnect_ring);
 
 /*
  * vmbus_close - Close the specified channel
  */
 void vmbus_close(struct vmbus_channel *channel)
 {
-	struct list_head *cur, *tmp;
-	struct vmbus_channel *cur_channel;
-
-	if (channel->primary_channel != NULL) {
-		/*
-		 * We will only close sub-channels when
-		 * the primary is closed.
-		 */
-		return;
-	}
-	/*
-	 * Close all the sub-channels first and then close the
-	 * primary channel.
-	 */
-	list_for_each_safe(cur, tmp, &channel->sc_list) {
-		cur_channel = list_entry(cur, struct vmbus_channel, sc_list);
-		if (cur_channel->rescind) {
-			wait_for_completion(&cur_channel->rescind_event);
-			mutex_lock(&vmbus_connection.channel_mutex);
-			vmbus_close_internal(cur_channel);
-			hv_process_channel_removal(
-					   cur_channel->offermsg.child_relid);
-		} else {
-			mutex_lock(&vmbus_connection.channel_mutex);
-			vmbus_close_internal(cur_channel);
-		}
-		mutex_unlock(&vmbus_connection.channel_mutex);
-	}
-	/*
-	 * Now close the primary.
-	 */
-	mutex_lock(&vmbus_connection.channel_mutex);
-	vmbus_close_internal(channel);
-	mutex_unlock(&vmbus_connection.channel_mutex);
+	if (vmbus_disconnect_ring(channel) == 0)
+		vmbus_free_ring(channel);
 }
 EXPORT_SYMBOL_GPL(vmbus_close);
+
 
 int vmbus_sendpacket_ctl(struct vmbus_channel *channel, void *buffer,
 			 u32 bufferlen, u64 requestid,
