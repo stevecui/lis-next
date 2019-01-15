@@ -587,6 +587,29 @@ static void netvsc_disconnect_vsp(struct hv_device *device)
 	netvsc_destroy_buf(device);
 }
 
+static void netvsc_teardown_send_gpadl(struct hv_device *device,
+				       struct netvsc_device *net_device,
+				       struct net_device *ndev)
+{
+	int ret;
+
+	if (net_device->send_buf_gpadl_handle) {
+		ret = vmbus_teardown_gpadl(device->channel,
+					   net_device->send_buf_gpadl_handle);
+
+		/* If we failed here, we might as well return and have a leak
+		 * rather than continue and a bugchk
+		 */
+		if (ret != 0) {
+			netdev_err(ndev,
+				   "unable to teardown send buffer's gpadl\n");
+			return;
+		}
+		net_device->send_buf_gpadl_handle = 0;
+	}
+}
+
+
 static void netvsc_teardown_recv_gpadl(struct hv_device *device,
 				       struct netvsc_device *net_device,
 				       struct net_device *ndev)
