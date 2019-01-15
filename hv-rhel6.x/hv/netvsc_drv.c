@@ -1451,10 +1451,15 @@ static void netvsc_get_drvinfo(struct net_device *net,
 static int netvsc_detach(struct net_device *ndev,
                         struct netvsc_device *nvdev)
 {
-       struct net_device_context *ndev_ctx = netdev_priv(ndev);
-       struct hv_device *hdev = ndev_ctx->device_ctx;
+       struct net_device_context *ndev_ctx = NULL;
+       struct hv_device *hdev = NULL;
        int ret;
-printk("detach_0\n");
+
+       printk("detach_-2\n");
+       ndev_ctx = netdev_priv(ndev);
+       printk("detach_-1\n");
+       hdev = ndev_ctx->device_ctx;
+       printk("detach_0\n");
        /* Don't try continuing to try and setup sub channels */
        if (cancel_work_sync(&nvdev->subchan_work))
                nvdev->num_chn = 1;
