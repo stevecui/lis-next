@@ -727,7 +727,7 @@ static void vmbus_onmessage_work(struct work_struct *work)
 	/* Do not process messages if we're in DISCONNECTED state */
 	if (vmbus_connection.conn_state == DISCONNECTED)
 		return;
-
+printk("6_ct_onmsg_work\n");
 	ctx = container_of(work, struct onmessage_work_context,
 			   work);
 	vmbus_onmessage(&ctx->msg);

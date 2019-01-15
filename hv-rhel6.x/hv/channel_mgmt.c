@@ -352,7 +352,9 @@ static struct vmbus_channel *alloc_channel(void)
 static void free_channel(struct vmbus_channel *channel)
 {
 	tasklet_kill(&channel->callback_event);
-	kfree(channel);
+//	kfree(channel);
+kobject_put(&channel->kobj);
+
 }
 
 static void percpu_channel_enq(void *arg)
@@ -391,7 +393,7 @@ void hv_process_channel_removal(u32 relid)
 {
 	unsigned long flags;
 	struct vmbus_channel *primary_channel, *channel;
-
+printk("5_ct_chan_remove\n");
 	BUG_ON(!mutex_is_locked(&vmbus_connection.channel_mutex));
 
 	/*
@@ -936,7 +938,7 @@ static void vmbus_onoffer_rescind(struct vmbus_channel_message_header *hdr)
 	struct vmbus_channel_rescind_offer *rescind;
 	struct vmbus_channel *channel;
 	struct device *dev;
-
+printk("6_ct_rescind\n");
 	rescind = (struct vmbus_channel_rescind_offer *)hdr;
 
 	trace_vmbus_onoffer_rescind(rescind);
