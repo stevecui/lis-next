@@ -1454,33 +1454,42 @@ static int netvsc_detach(struct net_device *ndev,
        struct net_device_context *ndev_ctx = netdev_priv(ndev);
        struct hv_device *hdev = ndev_ctx->device_ctx;
        int ret;
-
+printk("detach_0\n");
        /* Don't try continuing to try and setup sub channels */
        if (cancel_work_sync(&nvdev->subchan_work))
                nvdev->num_chn = 1;
-
+printk("deta_1\n");
        /* If device was up (receiving) then shutdown */
        if (netif_running(ndev)) {
                netif_tx_disable(ndev);
+ printk("deta_2\n");
 
                ret = rndis_filter_close(nvdev);
+ printk("deta_3\n");
+
                if (ret) {
                        netdev_err(ndev,
                                   "unable to close device (ret %d).\n", ret);
                        return ret;
                }
+ printk("deta_4\n");
 
                ret = netvsc_wait_until_empty(nvdev);
+ printk("deta_5\n");
+
                if (ret) {
                        netdev_err(ndev,
                                   "Ring buffer not empty after closing rndis\n");
                        return ret;
                }
        }
+ printk("deta_6\n");
 
        netif_device_detach(ndev);
+ printk("deta_7\n");
 
        rndis_filter_device_remove(hdev, nvdev);
+ printk("deta_8\n");
 
        return 0;
 }
@@ -1650,8 +1659,8 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
 	struct netvsc_device_info device_info;
 	int limit = ETH_DATA_LEN;
 	int ret = 0;
-if(mtu==1200)
-	WARN_ONCE(1,"hello\n");
+//if(mtu==1200)
+	//WARN_ONCE(1,"hello\n");
     printk("mtu_0:%d\n",mtu);
 	if (!nvdev || nvdev->destroy)
 		return -ENODEV;
