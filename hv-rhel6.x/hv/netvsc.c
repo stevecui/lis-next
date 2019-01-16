@@ -614,7 +614,7 @@ static void netvsc_revoke_recv_buf(struct hv_device *device,
 		revoke_packet->msg.v1_msg.
 		revoke_recv_buf.id = NETVSC_RECEIVE_BUFFER_ID;
 
-		trace_nvsp_send(ndev, revoke_packet);
+		//trace_nvsp_send(ndev, revoke_packet);
 
 		ret = vmbus_sendpacket(device->channel,
 				       revoke_packet,

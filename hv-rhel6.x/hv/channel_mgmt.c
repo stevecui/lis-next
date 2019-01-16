@@ -1219,7 +1219,7 @@ static void vmbus_onversion_response(
 	}
 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
 }
-vmbus_onmessage
+
 
 /* Channel message dispatch table */
 const struct vmbus_channel_message_table_entry

@@ -751,7 +751,7 @@ struct vmbus_device {
 	bool perf_device;
 };
 /* Allocated memory for ring buffer */
-struct page *ringbuffer_page;
+//struct page *ringbuffer_page;
 
 struct vmbus_channel {
 
