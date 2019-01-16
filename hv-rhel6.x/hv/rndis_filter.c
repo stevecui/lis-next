@@ -1079,47 +1079,78 @@ static void netvsc_sc_open(struct vmbus_channel *new_sc)
  */
 int rndis_set_subchannel(struct net_device *ndev, struct netvsc_device *nvdev)
 {
-	struct nvsp_message *init_packet = &nvdev->channel_init_pkt;
-        struct net_device_context *ndev_ctx = netdev_priv(ndev);
-        struct hv_device *hv_dev = ndev_ctx->device_ctx;
-        struct rndis_device *rdev = nvdev->extension;
+		struct netvsc_device *nvdev
+			= container_of(w, struct netvsc_device, subchan_work);
+		struct nvsp_message *init_packet = &nvdev->channel_init_pkt;
+		struct net_device_context *ndev_ctx;
+		struct rndis_device *rdev;
+		struct net_device *ndev;
+		struct hv_device *hv_dev;
+		int i, ret;
+	
+		if (!rtnl_trylock()) {
+			schedule_work(w);
+			return;
+		}
+	
+		rdev = nvdev->extension;
+		if (!rdev)
+			goto unlock;	/* device was removed */
+	
+		ndev = rdev->ndev;
+		ndev_ctx = netdev_priv(ndev);
+		hv_dev = ndev_ctx->device_ctx;
+	
+		memset(init_packet, 0, sizeof(struct nvsp_message));
+		init_packet->hdr.msg_type = NVSP_MSG5_TYPE_SUBCHANNEL;
+		init_packet->msg.v5_msg.subchn_req.op = NVSP_SUBCHANNEL_ALLOCATE;
+		init_packet->msg.v5_msg.subchn_req.num_subchannels =
+							nvdev->num_chn - 1;
+		ret = vmbus_sendpacket(hv_dev->channel, init_packet,
+					   sizeof(struct nvsp_message),
+					   (unsigned long)init_packet,
+					   VM_PKT_DATA_INBAND,
+					   VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
+		if (ret) {
+			netdev_err(ndev, "sub channel allocate send failed: %d\n", ret);
+			goto failed;
+		}
+	
+		wait_for_completion(&nvdev->channel_init_wait);
+		if (init_packet->msg.v5_msg.subchn_comp.status != NVSP_STAT_SUCCESS) {
+			netdev_err(ndev, "sub channel request failed\n");
+			goto failed;
+		}
+	
+		nvdev->num_chn = 1 +
+			init_packet->msg.v5_msg.subchn_comp.num_subchannels;
+	
+		/* wait for all sub channels to open */
+		wait_event(nvdev->subchan_open,
+			   atomic_read(&nvdev->open_chn) == nvdev->num_chn);
+	
+		/* ignore failues from setting rss parameters, still have channels */
+		rndis_filter_set_rss_param(rdev, netvsc_hash_key);
+	
+		netif_set_real_num_tx_queues(ndev, nvdev->num_chn);
+		netif_set_real_num_rx_queues(ndev, nvdev->num_chn);
+	
+		for (i = 0; i < VRSS_SEND_TAB_SIZE; i++)
+			ndev_ctx->tx_table[i] = i % nvdev->num_chn;
+	
+		rtnl_unlock();
+		return;
+	
+	failed:
+		/* fallback to only primary channel */
+		for (i = 1; i < nvdev->num_chn; i++)
+			netif_napi_del(&nvdev->chan_table[i].napi);
+	
+		nvdev->max_chn = 1;
+		nvdev->num_chn = 1;
+	unlock:
+		rtnl_unlock();
 
-	int ret;
-
-        ASSERT_RTNL();
-	memset(init_packet, 0, sizeof(struct nvsp_message));
-	init_packet->hdr.msg_type = NVSP_MSG5_TYPE_SUBCHANNEL;
-	init_packet->msg.v5_msg.subchn_req.op = NVSP_SUBCHANNEL_ALLOCATE;
-	init_packet->msg.v5_msg.subchn_req.num_subchannels =
-						nvdev->num_chn - 1;
-	ret = vmbus_sendpacket(hv_dev->channel, init_packet,
-			       sizeof(struct nvsp_message),
-			       (unsigned long)init_packet,
-			       VM_PKT_DATA_INBAND,
-			       VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
-	if (ret) {
-		netdev_err(ndev, "sub channel allocate send failed: %d\n", ret);
-		return ret;
-	}
-
-	wait_for_completion(&nvdev->channel_init_wait);
-	if (init_packet->msg.v5_msg.subchn_comp.status != NVSP_STAT_SUCCESS) {
-		netdev_err(ndev, "sub channel request failed\n");
-		return -EIO;
-	}
-
-	nvdev->num_chn = 1 +
-		init_packet->msg.v5_msg.subchn_comp.num_subchannels;
-
-	/* ignore failues from setting rss parameters, still have channels */
-	rndis_filter_set_rss_param(rdev, netvsc_hash_key,
-				   nvdev->num_chn);
-
-	netif_set_real_num_tx_queues(ndev, nvdev->num_chn);
-#ifdef NOTYET
-	netif_set_real_num_rx_queues(ndev, nvdev->num_chn);
-#endif
-	return 0;
 }
 
 struct netvsc_device *rndis_filter_device_add(struct hv_device *dev,
