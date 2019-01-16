@@ -761,7 +761,8 @@ void netvsc_device_remove(struct hv_device *device)
 	if (vmbus_proto_version < VERSION_WIN10)
 		netvsc_teardown_send_gpadl(device, net_device, ndev);
 
-	RCU_INIT_POINTER(net_device_ctx->nvdev, NULL);
+	//RCU_INIT_POINTER(net_device_ctx->nvdev, NULL);
+    net_device_ctx->nvdev = NULL;
 
 	/* And disassociate NAPI context from device */
 	for (i = 0; i < net_device->num_chn; i++)
@@ -786,7 +787,7 @@ void netvsc_device_remove(struct hv_device *device)
 	}
 
 	/* Release all resources */
-	free_netvsc_device_rcu(net_device);
+	free_netvsc_device(net_device);
 
 }
 
