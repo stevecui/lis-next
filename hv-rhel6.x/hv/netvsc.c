@@ -586,6 +586,10 @@ static void netvsc_disconnect_vsp(struct hv_device *device)
 {
 	netvsc_destroy_buf(device);
 }
+static void free_netvsc_device_rcu(struct netvsc_device *nvdev)
+{
+	call_rcu(&nvdev->rcu, free_netvsc_device);
+}
 
 static void netvsc_revoke_recv_buf(struct hv_device *device,
 				   struct netvsc_device *net_device,

@@ -750,6 +750,8 @@ struct vmbus_device {
 	__u8 guid[16];
 	bool perf_device;
 };
+/* Allocated memory for ring buffer */
+struct page *ringbuffer_page;
 
 struct vmbus_channel {
 

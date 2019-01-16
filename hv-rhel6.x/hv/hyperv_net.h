@@ -989,6 +989,7 @@ struct netvsc_device {
 	atomic_t open_cnt;
 
 	struct netvsc_channel chan_table[VRSS_CHANNEL_MAX];
+	struct rcu_head rcu;
 };
 
 static inline struct netvsc_device *
