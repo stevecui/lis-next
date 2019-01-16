@@ -582,161 +582,6 @@ cleanup:
 	return ret;
 }
 
-static void netvsc_disconnect_vsp(struct hv_device *device)
-{
-	netvsc_destroy_buf(device);
-}
-static void free_netvsc_device_rcu(struct netvsc_device *nvdev)
-{
-	call_rcu(&nvdev->rcu, free_netvsc_device);
-}
-
-static void netvsc_revoke_recv_buf(struct hv_device *device,
-				   struct netvsc_device *net_device,
-				   struct net_device *ndev)
-{
-	struct nvsp_message *revoke_packet;
-	int ret;
-
-	/*
-	 * If we got a section count, it means we received a
-	 * SendReceiveBufferComplete msg (ie sent
-	 * NvspMessage1TypeSendReceiveBuffer msg) therefore, we need
-	 * to send a revoke msg here
-	 */
-	if (net_device->recv_section_cnt) {
-		/* Send the revoke receive buffer */
-		revoke_packet = &net_device->revoke_packet;
-		memset(revoke_packet, 0, sizeof(struct nvsp_message));
-
-		revoke_packet->hdr.msg_type =
-			NVSP_MSG1_TYPE_REVOKE_RECV_BUF;
-		revoke_packet->msg.v1_msg.
-		revoke_recv_buf.id = NETVSC_RECEIVE_BUFFER_ID;
-
-		//trace_nvsp_send(ndev, revoke_packet);
-
-		ret = vmbus_sendpacket(device->channel,
-				       revoke_packet,
-				       sizeof(struct nvsp_message),
-				       (unsigned long)revoke_packet,
-				       VM_PKT_DATA_INBAND, 0);
-		/* If the failure is because the channel is rescinded;
-		 * ignore the failure since we cannot send on a rescinded
-		 * channel. This would allow us to properly cleanup
-		 * even when the channel is rescinded.
-		 */
-		if (device->channel->rescind)
-			ret = 0;
-		/*
-		 * If we failed here, we might as well return and
-		 * have a leak rather than continue and a bugchk
-		 */
-		if (ret != 0) {
-			netdev_err(ndev, "unable to send "
-				"revoke receive buffer to netvsp\n");
-			return;
-		}
-		net_device->recv_section_cnt = 0;
-	}
-}
-
-
-static void netvsc_revoke_send_buf(struct hv_device *device,
-				   struct netvsc_device *net_device,
-				   struct net_device *ndev)
-{
-	struct nvsp_message *revoke_packet;
-	int ret;
-
-	/* Deal with the send buffer we may have setup.
-	 * If we got a  send section size, it means we received a
-	 * NVSP_MSG1_TYPE_SEND_SEND_BUF_COMPLETE msg (ie sent
-	 * NVSP_MSG1_TYPE_SEND_SEND_BUF msg) therefore, we need
-	 * to send a revoke msg here
-	 */
-	if (net_device->send_section_cnt) {
-		/* Send the revoke receive buffer */
-		revoke_packet = &net_device->revoke_packet;
-		memset(revoke_packet, 0, sizeof(struct nvsp_message));
-
-		revoke_packet->hdr.msg_type =
-			NVSP_MSG1_TYPE_REVOKE_SEND_BUF;
-		revoke_packet->msg.v1_msg.revoke_send_buf.id =
-			NETVSC_SEND_BUFFER_ID;
-
-		//trace_nvsp_send(ndev, revoke_packet);
-
-		ret = vmbus_sendpacket(device->channel,
-				       revoke_packet,
-				       sizeof(struct nvsp_message),
-				       (unsigned long)revoke_packet,
-				       VM_PKT_DATA_INBAND, 0);
-
-		/* If the failure is because the channel is rescinded;
-		 * ignore the failure since we cannot send on a rescinded
-		 * channel. This would allow us to properly cleanup
-		 * even when the channel is rescinded.
-		 */
-		if (device->channel->rescind)
-			ret = 0;
-
-		/* If we failed here, we might as well return and
-		 * have a leak rather than continue and a bugchk
-		 */
-		if (ret != 0) {
-			netdev_err(ndev, "unable to send "
-				   "revoke send buffer to netvsp\n");
-			return;
-		}
-		net_device->send_section_cnt = 0;
-	}
-}
-
-static void netvsc_teardown_send_gpadl(struct hv_device *device,
-				       struct netvsc_device *net_device,
-				       struct net_device *ndev)
-{
-	int ret;
-
-	if (net_device->send_buf_gpadl_handle) {
-		ret = vmbus_teardown_gpadl(device->channel,
-					   net_device->send_buf_gpadl_handle);
-
-		/* If we failed here, we might as well return and have a leak
-		 * rather than continue and a bugchk
-		 */
-		if (ret != 0) {
-			netdev_err(ndev,
-				   "unable to teardown send buffer's gpadl\n");
-			return;
-		}
-		net_device->send_buf_gpadl_handle = 0;
-	}
-}
-
-
-static void netvsc_teardown_recv_gpadl(struct hv_device *device,
-				       struct netvsc_device *net_device,
-				       struct net_device *ndev)
-{
-	int ret;
-
-	if (net_device->recv_buf_gpadl_handle) {
-		ret = vmbus_teardown_gpadl(device->channel,
-					   net_device->recv_buf_gpadl_handle);
-
-		/* If we failed here, we might as well return and have a leak
-		 * rather than continue and a bugchk
-		 */
-		if (ret != 0) {
-			netdev_err(ndev,
-				   "unable to teardown receive buffer's gpadl\n");
-			return;
-		}
-		net_device->recv_buf_gpadl_handle = 0;
-	}
-}
 
 /*
  * netvsc_device_remove - Callback when the root bus device is removed
@@ -749,24 +594,11 @@ void netvsc_device_remove(struct hv_device *device)
 		= rtnl_dereference(net_device_ctx->nvdev);
 	int i;
 
-	/*
-	 * Revoke receive buffer. If host is pre-Win2016 then tear down
-	 * receive buffer GPADL. Do the same for send buffer.
-	 */
-	netvsc_revoke_recv_buf(device, net_device, ndev);
-	if (vmbus_proto_version < VERSION_WIN10)
-		netvsc_teardown_recv_gpadl(device, net_device, ndev);
+	//cancel_work_sync(&net_device->subchan_work);
 
-	netvsc_revoke_send_buf(device, net_device, ndev);
-	if (vmbus_proto_version < VERSION_WIN10)
-		netvsc_teardown_send_gpadl(device, net_device, ndev);
+	netvsc_disconnect_vsp(device);
 
-	//RCU_INIT_POINTER(net_device_ctx->nvdev, NULL);
-    net_device_ctx->nvdev = NULL;
-
-	/* And disassociate NAPI context from device */
-	for (i = 0; i < net_device->num_chn; i++)
-		netif_napi_del(&net_device->chan_table[i].napi);
+	RCU_INIT_POINTER(net_device_ctx->nvdev, NULL);
 
 	/*
 	 * At this point, no one should be accessing net_device
@@ -777,17 +609,13 @@ void netvsc_device_remove(struct hv_device *device)
 	/* Now, we can close the channel safely */
 	vmbus_close(device->channel);
 
-	/*
-	 * If host is Win2016 or higher then we do the GPADL tear down
-	 * here after VMBus is closed.
-	*/
-	if (vmbus_proto_version >= VERSION_WIN10) {
-		netvsc_teardown_recv_gpadl(device, net_device, ndev);
-		netvsc_teardown_send_gpadl(device, net_device, ndev);
-	}
+	/* And dissassociate NAPI context from device */
+	for (i = 0; i < net_device->num_chn; i++)
+		netif_napi_del(&net_device->chan_table[i].napi);
 
 	/* Release all resources */
-	free_netvsc_device(net_device);
+	free_netvsc_device_rcu(net_device);
+
 
 }
 
