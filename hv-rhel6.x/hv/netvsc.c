@@ -586,6 +586,58 @@ static void netvsc_disconnect_vsp(struct hv_device *device)
 {
 	netvsc_destroy_buf(device);
 }
+
+static void netvsc_revoke_recv_buf(struct hv_device *device,
+				   struct netvsc_device *net_device,
+				   struct net_device *ndev)
+{
+	struct nvsp_message *revoke_packet;
+	int ret;
+
+	/*
+	 * If we got a section count, it means we received a
+	 * SendReceiveBufferComplete msg (ie sent
+	 * NvspMessage1TypeSendReceiveBuffer msg) therefore, we need
+	 * to send a revoke msg here
+	 */
+	if (net_device->recv_section_cnt) {
+		/* Send the revoke receive buffer */
+		revoke_packet = &net_device->revoke_packet;
+		memset(revoke_packet, 0, sizeof(struct nvsp_message));
+
+		revoke_packet->hdr.msg_type =
+			NVSP_MSG1_TYPE_REVOKE_RECV_BUF;
+		revoke_packet->msg.v1_msg.
+		revoke_recv_buf.id = NETVSC_RECEIVE_BUFFER_ID;
+
+		trace_nvsp_send(ndev, revoke_packet);
+
+		ret = vmbus_sendpacket(device->channel,
+				       revoke_packet,
+				       sizeof(struct nvsp_message),
+				       (unsigned long)revoke_packet,
+				       VM_PKT_DATA_INBAND, 0);
+		/* If the failure is because the channel is rescinded;
+		 * ignore the failure since we cannot send on a rescinded
+		 * channel. This would allow us to properly cleanup
+		 * even when the channel is rescinded.
+		 */
+		if (device->channel->rescind)
+			ret = 0;
+		/*
+		 * If we failed here, we might as well return and
+		 * have a leak rather than continue and a bugchk
+		 */
+		if (ret != 0) {
+			netdev_err(ndev, "unable to send "
+				"revoke receive buffer to netvsp\n");
+			return;
+		}
+		net_device->recv_section_cnt = 0;
+	}
+}
+
+
 static void netvsc_revoke_send_buf(struct hv_device *device,
 				   struct netvsc_device *net_device,
 				   struct net_device *ndev)
@@ -609,7 +661,7 @@ static void netvsc_revoke_send_buf(struct hv_device *device,
 		revoke_packet->msg.v1_msg.revoke_send_buf.id =
 			NETVSC_SEND_BUFFER_ID;
 
-		trace_nvsp_send(ndev, revoke_packet);
+		//trace_nvsp_send(ndev, revoke_packet);
 
 		ret = vmbus_sendpacket(device->channel,
 				       revoke_packet,
