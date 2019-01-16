@@ -125,7 +125,9 @@ static void free_netvsc_device(struct netvsc_device *nvdev)
 	int i;
 
 	for (i = 0; i < VRSS_CHANNEL_MAX; i++)
+		{printk("i:%d\n",i);
 		vfree(nvdev->chan_table[i].mrc.buf);
+		}
 
 	kfree(nvdev);
 }
