@@ -1087,25 +1087,29 @@ void rndis_set_subchannel(struct work_struct *w)
 	struct net_device *ndev;
 	struct hv_device *hv_dev;
 	int i, ret;
-
+printk("set_0\n");
 	if (!rtnl_trylock()) {
 		schedule_work(w);
 		return;
 	}
+	printk("set_1\n");
 
 	rdev = nvdev->extension;
 	if (!rdev)
 		goto unlock;	/* device was removed */
+	printk("set_2\n");
 
 	ndev = rdev->ndev;
 	ndev_ctx = netdev_priv(ndev);
 	hv_dev = ndev_ctx->device_ctx;
+	printk("set_3\n");
 
 	memset(init_packet, 0, sizeof(struct nvsp_message));
 	init_packet->hdr.msg_type = NVSP_MSG5_TYPE_SUBCHANNEL;
 	init_packet->msg.v5_msg.subchn_req.op = NVSP_SUBCHANNEL_ALLOCATE;
 	init_packet->msg.v5_msg.subchn_req.num_subchannels =
 						nvdev->num_chn - 1;
+	printk("set_4\n");
 	ret = vmbus_sendpacket(hv_dev->channel, init_packet,
 			       sizeof(struct nvsp_message),
 			       (unsigned long)init_packet,
@@ -1115,12 +1119,14 @@ void rndis_set_subchannel(struct work_struct *w)
 		netdev_err(ndev, "sub channel allocate send failed: %d\n", ret);
 		goto failed;
 	}
+	printk("set_5\n");
 
 	wait_for_completion(&nvdev->channel_init_wait);
 	if (init_packet->msg.v5_msg.subchn_comp.status != NVSP_STAT_SUCCESS) {
 		netdev_err(ndev, "sub channel request failed\n");
 		goto failed;
 	}
+	printk("set_6\n");
 
 	nvdev->num_chn = 1 +
 		init_packet->msg.v5_msg.subchn_comp.num_subchannels;
@@ -1128,29 +1134,36 @@ void rndis_set_subchannel(struct work_struct *w)
 	/* wait for all sub channels to open */
 	wait_event(nvdev->subchan_open,
 		   atomic_read(&nvdev->open_chn) == nvdev->num_chn);
+	printk("set_7\n");
 
 	/* ignore failues from setting rss parameters, still have channels */
 	rndis_filter_set_rss_param(rdev, netvsc_hash_key,
 				   nvdev->num_chn);
+	printk("set_8\n");
 
 	netif_set_real_num_tx_queues(ndev, nvdev->num_chn);
 	netif_set_real_num_rx_queues(ndev, nvdev->num_chn);
+	printk("set_9\n");
 
 	for (i = 0; i < VRSS_SEND_TAB_SIZE; i++)
 		ndev_ctx->tx_table[i] = i % nvdev->num_chn;
+	printk("set_a\n");
 
 	rtnl_unlock();
+	printk("set_b\n");
 	return;
 
 failed:
 	/* fallback to only primary channel */
 	for (i = 1; i < nvdev->num_chn; i++)
 		netif_napi_del(&nvdev->chan_table[i].napi);
+	printk("set_c\n");
 
 	nvdev->max_chn = 1;
 	nvdev->num_chn = 1;
 unlock:
 	rtnl_unlock();
+	printk("set_d\n");
 }
 
 
