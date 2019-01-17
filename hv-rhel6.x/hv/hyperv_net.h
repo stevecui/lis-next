@@ -976,6 +976,7 @@ struct netvsc_device {
 
 	refcount_t sc_offered;
 	struct work_struct subchan_work;
+	wait_queue_head_t subchan_open;
 
 	struct rndis_device *extension;
 
