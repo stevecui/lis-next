@@ -135,7 +135,7 @@ static int netvsc_wait_until_empty(struct netvsc_device *nvdev)
 {
         unsigned int retry = 0;
         int i;
-
+        printk("wait_until_empty_0:nvdev->num_chn:%d\n",nvdev->num_chn);
         /* Ensure pending bytes in ring are read */
         for (;;) {
                 u32 aread = 0;
