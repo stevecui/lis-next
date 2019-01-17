@@ -1130,7 +1130,8 @@ void rndis_set_subchannel(struct work_struct *w)
 		   atomic_read(&nvdev->open_chn) == nvdev->num_chn);
 
 	/* ignore failues from setting rss parameters, still have channels */
-	rndis_filter_set_rss_param(rdev, netvsc_hash_key);
+	rndis_filter_set_rss_param(rdev, netvsc_hash_key,
+				   nvdev->num_chn);
 
 	netif_set_real_num_tx_queues(ndev, nvdev->num_chn);
 	netif_set_real_num_rx_queues(ndev, nvdev->num_chn);
