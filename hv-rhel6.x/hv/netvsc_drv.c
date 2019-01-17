@@ -1501,47 +1501,35 @@ printk("deta_1\n");
 
 
 static int netvsc_attach(struct net_device *ndev,
-                        struct netvsc_device_info *dev_info)
+			 struct netvsc_device_info *dev_info)
 {
-       struct net_device_context *ndev_ctx = netdev_priv(ndev);
-       struct hv_device *hdev = ndev_ctx->device_ctx;
-       struct netvsc_device *nvdev;
-       struct rndis_device *rdev;
-       int ret;
+	struct net_device_context *ndev_ctx = netdev_priv(ndev);
+	struct hv_device *hdev = ndev_ctx->device_ctx;
+	struct netvsc_device *nvdev;
+	struct rndis_device *rdev;
+	int ret;
 
-       nvdev = rndis_filter_device_add(hdev, dev_info);
-       if (IS_ERR(nvdev))
-               return PTR_ERR(nvdev);
+	nvdev = rndis_filter_device_add(hdev, dev_info);
+	if (IS_ERR(nvdev))
+		return PTR_ERR(nvdev);
 
-       if (nvdev->num_chn > 1) {
-               ret = rndis_set_subchannel(ndev, nvdev);
+	/* Note: enable and attach happen when sub-channels setup */
 
-               /* if unavailable, just proceed with one queue */
-               if (ret) {
-                       nvdev->max_chn = 1;
-                       nvdev->num_chn = 1;
-               }
-       }
+	netif_carrier_off(ndev);
 
-       /* In any case device is now ready */
-       netif_device_attach(ndev);
+	if (netif_running(ndev)) {
+		ret = rndis_filter_open(nvdev);
+		if (ret)
+			return ret;
 
+		rdev = nvdev->extension;
+		if (!rdev->link_state)
+			netif_carrier_on(ndev);
+	}
 
-       /* Note: enable and attach happen when sub-channels setup */
-       netif_carrier_off(ndev);
-
-       if (netif_running(ndev)) {
-               ret = rndis_filter_open(nvdev);
-               if (ret)
-                       return ret;
-
-               rdev = nvdev->extension;
-               if (!rdev->link_state)
-                       netif_carrier_on(ndev);
-       }
-
-       return 0;
+	return 0;
 }
+
 
 
 #if (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(7,0))
