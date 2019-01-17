@@ -61,7 +61,7 @@ void netvsc_switch_datapath(struct net_device *ndev, bool vf)
 
 	net_device_ctx->datapath = vf;
 }
-
+#if 0
 /* Worker to setup sub channels on initial setup
  * Initial hotplug event occurs in softirq context
  * and can't wait for channels.
@@ -96,7 +96,7 @@ static void netvsc_subchan_work(struct work_struct *w)
 
 	rtnl_unlock();
 }
-
+#endif
 
 static struct netvsc_device *alloc_net_device(void)
 {
@@ -115,7 +115,9 @@ static struct netvsc_device *alloc_net_device(void)
 	net_device->max_pkt = RNDIS_MAX_PKT_DEFAULT;
 	net_device->pkt_align = RNDIS_PKT_ALIGN_DEFAULT;
 	init_completion(&net_device->channel_init_wait);
-	INIT_WORK(&net_device->subchan_work, netvsc_subchan_work);
+
+	//INIT_WORK(&net_device->subchan_work, netvsc_subchan_work);
+	INIT_WORK(&net_device->subchan_work, rndis_set_subchannel);
 
 	return net_device;
 }
