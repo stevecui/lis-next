@@ -1042,7 +1042,7 @@ static void netvsc_sc_open(struct vmbus_channel *new_sc)
 	u16 chn_index = new_sc->offermsg.offer.sub_channel_index;
 	struct netvsc_channel *nvchan;
 	int ret;
-
+printk("vsc_sc_open_0\n");
 	if (chn_index >= nvscdev->num_chn)
 		return;
 
@@ -1301,6 +1301,15 @@ struct netvsc_device *rndis_filter_device_add(struct hv_device *dev,
 
 	refcount_set(&net_device->sc_offered, num_rss_qs);
 	vmbus_set_sc_create_callback(dev->channel, netvsc_sc_open);
+
+	for (i = 1; i < net_device->num_chn; i++) {
+		ret = netvsc_alloc_recv_comp_ring(net_device, i);
+		if (ret) {
+			while (--i != 0)
+				vfree(net_device->chan_table[i].mrc.slots);
+			goto out;
+		}
+	}
 
 	for (i = 1; i < net_device->num_chn; i++)
 		netif_napi_add(net, &net_device->chan_table[i].napi,

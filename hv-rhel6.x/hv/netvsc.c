@@ -270,6 +270,21 @@ static void netvsc_destroy_buf(struct hv_device *device)
 	return;
 }
 
+int netvsc_alloc_recv_comp_ring(struct netvsc_device *net_device, u32 q_idx)
+{
+	struct netvsc_channel *nvchan = &net_device->chan_table[q_idx];
+	int node = cpu_to_node(nvchan->channel->target_cpu);
+	size_t size;
+
+	size = net_device->recv_completion_cnt * sizeof(struct recv_comp_data);
+	nvchan->mrc.buf = vzalloc_node(size, node);
+	if (!nvchan->mrc.buf)
+		nvchan->mrc.buf = vzalloc(size);
+
+	return nvchan->mrc.buf ? 0 : -ENOMEM;
+}
+
+
 static int netvsc_init_buf(struct hv_device *device,
 			   struct netvsc_device *net_device)
 {
