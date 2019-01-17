@@ -1092,6 +1092,7 @@ int rndis_set_subchannel(struct net_device *ndev, struct netvsc_device *nvdev)
 	init_packet->msg.v5_msg.subchn_req.op = NVSP_SUBCHANNEL_ALLOCATE;
 	init_packet->msg.v5_msg.subchn_req.num_subchannels =
 						nvdev->num_chn - 1;
+	printk("rndis_set_chan_0\n");
 	ret = vmbus_sendpacket(hv_dev->channel, init_packet,
 			       sizeof(struct nvsp_message),
 			       (unsigned long)init_packet,

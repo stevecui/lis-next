@@ -1512,7 +1512,7 @@ static int netvsc_attach(struct net_device *ndev,
        nvdev = rndis_filter_device_add(hdev, dev_info);
        if (IS_ERR(nvdev))
                return PTR_ERR(nvdev);
-
+       printk("netvsc_attach:nvdev->num_chn:%d\n",nvdev->num_chn);
        if (nvdev->num_chn > 1) {
                ret = rndis_set_subchannel(ndev, nvdev);
 
