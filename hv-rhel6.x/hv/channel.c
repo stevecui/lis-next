@@ -704,8 +704,9 @@ void vmbus_close(struct vmbus_channel *channel)
 {
 	struct list_head *cur, *tmp;
 	struct vmbus_channel *cur_channel;
-
+    printk("bus_close_0\n");
 	if (channel->primary_channel != NULL) {
+		printk("bus_close_1\n");
 		/*
 		 * We will only close sub-channels when
 		 * the primary is closed.
@@ -716,18 +717,25 @@ void vmbus_close(struct vmbus_channel *channel)
 	 * Close all the sub-channels first and then close the
 	 * primary channel.
 	 */
+	     printk("bus_close_2\n");
 	list_for_each_safe(cur, tmp, &channel->sc_list) {
+		    printk("bus_close_3\n");
 		cur_channel = list_entry(cur, struct vmbus_channel, sc_list);
+		    printk("bus_close_4\n");
 		if (cur_channel->rescind) {
+			    printk("bus_close_5\n");
 			wait_for_completion(&cur_channel->rescind_event);
 			mutex_lock(&vmbus_connection.channel_mutex);
 			vmbus_close_internal(cur_channel);
 			hv_process_channel_removal(
 					   cur_channel->offermsg.child_relid);
 		} else {
+			    printk("bus_close_6\n");
 			mutex_lock(&vmbus_connection.channel_mutex);
 			vmbus_close_internal(cur_channel);
+			
 		}
+		    printk("bus_close_7\n");
 		mutex_unlock(&vmbus_connection.channel_mutex);
 	}
 	/*
@@ -736,6 +744,7 @@ void vmbus_close(struct vmbus_channel *channel)
 	mutex_lock(&vmbus_connection.channel_mutex);
 	vmbus_close_internal(channel);
 	mutex_unlock(&vmbus_connection.channel_mutex);
+	    printk("bus_close_8\n");
 }
 EXPORT_SYMBOL_GPL(vmbus_close);
 
