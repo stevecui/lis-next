@@ -81,7 +81,7 @@ static void netvsc_subchan_work(struct work_struct *w)
 
 	rdev = nvdev->extension;
 	if (rdev) {
-		ret = rndis_set_subchannel(rdev->ndev, nvdev);
+		ret = rndis_set_subchannel(w);
 		if (ret == 0) {
 			netif_device_attach(rdev->ndev);
 		} else {
