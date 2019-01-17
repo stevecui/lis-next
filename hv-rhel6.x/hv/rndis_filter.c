@@ -1126,6 +1126,7 @@ int rndis_set_subchannel(struct net_device *ndev, struct netvsc_device *nvdev)
 #endif
 	return 0;
 }
+int netvsc_alloc_recv_comp_ring(struct netvsc_device *net_device, u32 q_idx);
 
 struct netvsc_device *rndis_filter_device_add(struct hv_device *dev,
 				      struct netvsc_device_info *device_info)
@@ -1306,7 +1307,7 @@ struct netvsc_device *rndis_filter_device_add(struct hv_device *dev,
 		ret = netvsc_alloc_recv_comp_ring(net_device, i);
 		if (ret) {
 			while (--i != 0)
-				vfree(net_device->chan_table[i].mrc.slots);
+				vfree(net_device->chan_table[i].mrc.buf);
 			goto out;
 		}
 	}
