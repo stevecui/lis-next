@@ -955,6 +955,7 @@ struct netvsc_device {
 	u32 recv_buf_size;
 	u32 recv_buf_gpadl_handle;
 	u32 recv_section_cnt;
+	u32 recv_completion_cnt;
 	struct nvsp_1_receive_buffer_section *recv_section;
 
 	/* Send buffer allocated by us */

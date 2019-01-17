@@ -387,6 +387,14 @@ static int netvsc_init_buf(struct hv_device *device,
 		goto cleanup;
 	}
 
+	/* Setup receive completion ring */
+	net_device->recv_completion_cnt
+		= round_up(net_device->recv_section_cnt + 1,
+			   PAGE_SIZE / sizeof(u64));
+	ret = netvsc_alloc_recv_comp_ring(net_device, 0);
+	if (ret)
+		goto cleanup;
+
 	/* Now setup the send buffer.
 	 */
 #if defined(RHEL_RELEASE_VERSION) && (RHEL_RELEASE_CODE > 1536)
