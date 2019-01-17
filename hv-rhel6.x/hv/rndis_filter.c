@@ -1098,12 +1098,14 @@ int rndis_set_subchannel(struct net_device *ndev, struct netvsc_device *nvdev)
 			       (unsigned long)init_packet,
 			       VM_PKT_DATA_INBAND,
 			       VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
+	printk("rndis_set_chan_1\n");
 	if (ret) {
 		netdev_err(ndev, "sub channel allocate send failed: %d\n", ret);
 		return ret;
 	}
 
 	wait_for_completion(&nvdev->channel_init_wait);
+	printk("rndis_set_chan_2\n");
 	if (init_packet->msg.v5_msg.subchn_comp.status != NVSP_STAT_SUCCESS) {
 		netdev_err(ndev, "sub channel request failed\n");
 		return -EIO;
@@ -1111,10 +1113,12 @@ int rndis_set_subchannel(struct net_device *ndev, struct netvsc_device *nvdev)
 
 	nvdev->num_chn = 1 +
 		init_packet->msg.v5_msg.subchn_comp.num_subchannels;
+	printk("rndis_set_chan_3\n");
 
 	/* ignore failues from setting rss parameters, still have channels */
 	rndis_filter_set_rss_param(rdev, netvsc_hash_key,
 				   nvdev->num_chn);
+	printk("rndis_set_chan_4\n");
 
 	netif_set_real_num_tx_queues(ndev, nvdev->num_chn);
 #ifdef NOTYET
