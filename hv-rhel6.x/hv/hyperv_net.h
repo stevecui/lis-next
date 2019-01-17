@@ -973,6 +973,7 @@ struct netvsc_device {
 
 	u32 max_chn;
 	u32 num_chn;
+	atomic_t open_chn;
 
 	refcount_t sc_offered;
 	struct work_struct subchan_work;
