@@ -624,7 +624,7 @@ static int vmbus_close_internal(struct vmbus_channel *channel)
 	 * first.
 	 */
 
-	tasklet_disable(&channel->callback_event);
+	//tasklet_disable(&channel->callback_event);
 
 	/*
 	 * In case a device driver's probe() fails (e.g.,
@@ -659,7 +659,7 @@ static int vmbus_close_internal(struct vmbus_channel *channel)
 
 	ret = vmbus_post_msg(msg, sizeof(struct vmbus_channel_close_channel), true);
 
-	trace_vmbus_close_internal(msg, ret);
+	//trace_vmbus_close_internal(msg, ret);
 
 	if (ret) {
 		pr_err("Close failed: close post msg return is %d\n", ret);
@@ -693,7 +693,7 @@ static int vmbus_close_internal(struct vmbus_channel *channel)
 
 out:
 	/* re-enable tasklet for use on re-open */
-	tasklet_enable(&channel->callback_event);
+	//tasklet_enable(&channel->callback_event);
 	return ret;
 }
 
