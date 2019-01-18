@@ -752,7 +752,8 @@ void netvsc_device_remove(struct hv_device *device)
 	netvsc_disconnect_vsp(device);
 
 	RCU_INIT_POINTER(net_device_ctx->nvdev, NULL);
-
+	for (i = 0; i < net_device->num_chn; i++)
+		napi_disable(&net_device->chan_table[0].napi);
 	/*
 	 * At this point, no one should be accessing net_device
 	 * except in here
@@ -762,8 +763,8 @@ void netvsc_device_remove(struct hv_device *device)
 	/* Now, we can close the channel safely */
 	vmbus_close(device->channel);
 
-	for (i = 0; i < net_device->num_chn; i++)
-		napi_disable(&net_device->chan_table[0].napi);
+//	for (i = 0; i < net_device->num_chn; i++)
+//		napi_disable(&net_device->chan_table[0].napi);
 
 	/* Release all resources */
 	free_netvsc_device_rcu(net_device);
