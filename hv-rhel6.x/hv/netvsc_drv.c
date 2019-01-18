@@ -45,6 +45,8 @@
 #include <linux/rtnetlink.h>
 #include <linux/netpoll.h>
 
+#include <linux/mm.h>
+
 #include "include/linux/hyperv.h"
 #include "hyperv_net.h"
 
@@ -1664,9 +1666,11 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
 	struct netvsc_device_info device_info;
 	int limit = ETH_DATA_LEN;
 	int ret = 0;
-//if(mtu==1200)
-	//WARN_ONCE(1,"hello\n");
+if(mtu==1200||mtu == 1400||mtu == 2000)
+{
+    steve_mtu = mtu;	
     printk("mtu_0:%d\n",mtu);
+}
 	if (!nvdev || nvdev->destroy)
 		return -ENODEV;
 	printk("mtu_1\n");
