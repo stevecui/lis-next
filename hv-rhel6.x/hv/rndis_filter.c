@@ -1046,6 +1046,7 @@ static void netvsc_sc_open(struct vmbus_channel *new_sc)
 	if (chn_index >= nvscdev->num_chn)
 		return;
 
+	printk("sc_open:chn_index:%d\n",chn_index);
 	nvchan = nvscdev->chan_table + chn_index;
 	nvchan->mrc.buf
 		= vzalloc(NETVSC_RECVSLOT_MAX * sizeof(struct recv_comp_data));
