@@ -738,6 +738,38 @@ static void netvsc_teardown_recv_gpadl(struct hv_device *device,
 	}
 }
 
+
+/*
+ * netvsc_device_remove - Callback when the root bus device is removed
+ */
+void netvsc_device_remove(struct hv_device *device)
+{
+	struct net_device *ndev = hv_get_drvdata(device);
+	struct net_device_context *net_device_ctx = netdev_priv(ndev);
+	struct netvsc_device *net_device = net_device_ctx->nvdev;
+	int i;
+
+	netvsc_disconnect_vsp(device);
+
+	RCU_INIT_POINTER(net_device_ctx->nvdev, NULL);
+
+	/*
+	 * At this point, no one should be accessing net_device
+	 * except in here
+	 */
+	netdev_dbg(ndev, "net device safe to remove\n");
+
+	/* Now, we can close the channel safely */
+	vmbus_close(device->channel);
+
+	for (i = 0; i < net_device->num_chn; i++)
+		napi_disable(&net_device->chan_table[0].napi);
+
+	/* Release all resources */
+	free_netvsc_device_rcu(net_device);
+}
+
+#if 0
 /*
  * netvsc_device_remove - Callback when the root bus device is removed
  */
@@ -789,7 +821,7 @@ void netvsc_device_remove(struct hv_device *device)
 	free_netvsc_device_rcu(net_device);
 
 }
-
+#endif
 #define RING_AVAIL_PERCENT_HIWATER 20
 #define RING_AVAIL_PERCENT_LOWATER 10
 
