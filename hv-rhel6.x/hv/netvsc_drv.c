@@ -162,7 +162,7 @@ static int netvsc_wait_until_empty(struct netvsc_device *nvdev)
 
                 if (aread == 0)
                         return 0;
-
+                printk("retry:%d\n",retry);
                 if (++retry > RETRY_MAX)
                         return -ETIMEDOUT;
 
