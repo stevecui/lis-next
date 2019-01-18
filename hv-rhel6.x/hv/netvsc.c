@@ -738,7 +738,7 @@ static void netvsc_teardown_recv_gpadl(struct hv_device *device,
 	}
 }
 
-
+#if 0
 /*
  * netvsc_device_remove - Callback when the root bus device is removed
  */
@@ -769,8 +769,8 @@ void netvsc_device_remove(struct hv_device *device)
 	/* Release all resources */
 	free_netvsc_device_rcu(net_device);
 }
-
-#if 0
+#endif
+#if 1 
 /*
  * netvsc_device_remove - Callback when the root bus device is removed
  */
@@ -816,6 +816,7 @@ void netvsc_device_remove(struct hv_device *device)
 	if (vmbus_proto_version >= VERSION_WIN10) {
 		netvsc_teardown_recv_gpadl(device, net_device, ndev);
 		netvsc_teardown_send_gpadl(device, net_device, ndev);
+                printk("333\n");
 	}
 
 	/* Release all resources */
