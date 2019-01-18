@@ -124,6 +124,11 @@ static void free_netvsc_device(struct netvsc_device *nvdev)
 {
 	int i;
 
+	kfree(nvdev->extension);
+	vfree(nvdev->recv_buf);
+	vfree(nvdev->send_buf);
+	kfree(nvdev->send_section_map);
+
 	for (i = 0; i < VRSS_CHANNEL_MAX; i++){
                 if(steve_mtu == 1200||steve_mtu==1400||steve_mtu==2000)
                     printk("i:%d,mrc.buf:%x\n",i,(unsigned int)(uintptr_t)(nvdev->chan_table[i].mrc.buf));

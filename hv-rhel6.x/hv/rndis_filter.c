@@ -1325,7 +1325,7 @@ void rndis_filter_device_remove(struct hv_device *dev,
 	net_dev->extension = NULL;
 
 	netvsc_device_remove(dev);
-	kfree(rndis_dev);
+	//kfree(rndis_dev);
 }
 
 int rndis_filter_open(struct netvsc_device *nvdev)

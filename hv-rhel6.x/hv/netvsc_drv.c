@@ -109,7 +109,7 @@ static int netvsc_open(struct net_device *net)
 		return ret;
 	}
 
-	netif_tx_wake_all_queues(net);
+	//netif_tx_wake_all_queues(net);
 
 	rdev = nvdev->extension;
 	if (!rdev->link_state) {
