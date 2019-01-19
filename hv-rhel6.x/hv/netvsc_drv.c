@@ -234,7 +234,7 @@ static inline int netvsc_get_tx_queue(struct net_device *ndev,
 
 	q_idx = ndc->tx_table[skb_get_hash(skb) &
 			      (VRSS_SEND_TAB_SIZE - 1)];
-
+printk("net_get_tx_que:q_dix:%d\n",q_idx);
 	/* If queue index changed record the new value */
 	if (q_idx != old_idx &&
 	    sk && sk_fullsock(sk) && rcu_access_pointer(sk->sk_dst_cache))
@@ -257,7 +257,7 @@ static u16 netvsc_pick_tx(struct net_device *ndev, struct sk_buff *skb)
 	struct net_device_context *net_device_ctx = netdev_priv(ndev);
 	u32 hash;
 	u16 q_idx = 0;
-
+printk("net_select_que:q_idx:%d\n",q_idx);
 	if (ndev->real_num_tx_queues <= 1)
 		return 0;
 
@@ -1128,7 +1128,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
 	packet->xmit_more = (skb->next != NULL);
 
 	packet->q_idx = skb_get_queue_mapping(skb);
-
+printk("net_start_xmit:pkt->q_idx:%d\n",packet->q_idx);
 	packet->total_data_buflen = skb->len;
 	packet->total_bytes = skb->len;
 	packet->total_packets = 1;
@@ -1378,7 +1378,7 @@ int netvsc_recv_callback(struct net_device *net,
 	struct sk_buff *vf_skb;
 	struct netvsc_stats *rx_stats;
 	int ret = 0;
-
+printk("net_recv_callback:q_idx:%d\n",q_idx);
 	if (!net || net->reg_state != NETREG_REGISTERED)
 		return NVSP_STAT_FAIL;
 

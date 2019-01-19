@@ -874,6 +874,7 @@ static void netvsc_send_tx_complete(struct net_device *ndev,
 		if (send_index != NETVSC_INVALID_INDEX)
 			netvsc_free_send_slot(net_device, send_index);
 		q_idx = packet->q_idx;
+		printk("net_send_tx_cpl:q_idx:%d\n",q_idx);
 		tx_stats = &net_device->chan_table[q_idx].tx_stats;
 
 		u64_stats_update_begin(&tx_stats->syncp);
@@ -1009,7 +1010,7 @@ static inline int netvsc_send_pkt(
 	int ret;
 	struct hv_page_buffer *pgbuf;
 	u32 ring_avail = hv_ringbuf_avail_percent(&out_channel->outbound);
-
+printk("net_send_pke:pkt->q_idx:%d\n",packet->q_idx);
 	nvmsg.hdr.msg_type = NVSP_MSG1_TYPE_SEND_RNDIS_PKT;
 	if (skb != NULL) {
 		/* 0 is RMC_DATA; */
@@ -1102,12 +1103,12 @@ int netvsc_send(struct net_device_context *ndev_ctx,
 	struct hv_netvsc_packet *msd_send = NULL, *cur_send = NULL;
 	struct sk_buff *msd_skb = NULL;
 	bool try_batch;
-
+printk("net_send:pkt->q_idx:%d\n"packet->q_idx);
 	/* If device is rescinded, return error and packet will get dropped. */
 	if (unlikely(!net_device || net_device->destroy))
 		return -ENODEV;
-	
 	nvchan = &net_device->chan_table[packet->q_idx];	
+	
 	packet->send_buf_index = NETVSC_INVALID_INDEX;
 	packet->cp_partial = false;
 
@@ -1229,7 +1230,7 @@ static inline void count_recv_comp_slot(struct netvsc_device *nvdev, u16 q_idx,
 	struct multi_recv_comp *mrc = &nvdev->chan_table[q_idx].mrc;
 	u32 first = mrc->first;
 	u32 next = mrc->next;
-
+printk("counter_recv_comp_slot:q_dix:%d\n",q_idx);
 	*filled = (first > next) ? NETVSC_RECVSLOT_MAX - first + next :
 		  next - first;
 
@@ -1242,7 +1243,7 @@ static inline struct recv_comp_data *read_recv_comp_slot(struct netvsc_device
 {
 	struct multi_recv_comp *mrc = &nvdev->chan_table[q_idx].mrc;
 	u32 filled, avail;
-
+printk("read_recv_comp_slot:q_idx:%d\n",q_idx);
 	if (unlikely(!mrc->buf))
 		return NULL;
 
@@ -1258,6 +1259,7 @@ static inline void put_recv_comp_slot(struct netvsc_device *nvdev, u16 q_idx)
 {
 	struct multi_recv_comp *mrc = &nvdev->chan_table[q_idx].mrc;
 	int num_recv;
+	printk("put_recv_comp_slot:q_idx:%d\n",q_idx);
 
 	mrc->first = (mrc->first + 1) % NETVSC_RECVSLOT_MAX;
 
@@ -1297,7 +1299,7 @@ static inline struct recv_comp_data *get_recv_comp_slot(
 	struct multi_recv_comp *mrc = &nvdev->chan_table[q_idx].mrc;
 	u32 filled, avail, next;
 	struct recv_comp_data *rcd;
-
+printk("get_recv_comp_slot:q_idx:%d\n",q_idx);
 	if (unlikely(!nvdev->recv_section))
 		return NULL;
 
@@ -1487,10 +1489,10 @@ int netvsc_poll(struct napi_struct *napi, int budget)
 	struct netvsc_device *net_device = nvchan->net_device;
 	struct vmbus_channel *channel = nvchan->channel;
 	struct hv_device *device = netvsc_channel_to_device(channel);
-	u16 q_idx = channel->offermsg.offer.sub_channel_index;
 	struct net_device *ndev = hv_get_drvdata(device);
+	u16 q_idx = channel->offermsg.offer.sub_channel_index;
 	int work_done = 0;
-
+printk("net_poll:q_idx:%d\n",q_idx);
 	/* If starting a new interval */
 	if (!nvchan->desc)
 		nvchan->desc = hv_pkt_iter_first(channel);
