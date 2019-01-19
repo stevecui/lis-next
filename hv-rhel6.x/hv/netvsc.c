@@ -1103,7 +1103,7 @@ int netvsc_send(struct net_device_context *ndev_ctx,
 	struct hv_netvsc_packet *msd_send = NULL, *cur_send = NULL;
 	struct sk_buff *msd_skb = NULL;
 	bool try_batch;
-printk("net_send:pkt->q_idx:%d\n"packet->q_idx);
+printk("net_send:pkt->q_idx:%d\n",packet->q_idx);
 	/* If device is rescinded, return error and packet will get dropped. */
 	if (unlikely(!net_device || net_device->destroy))
 		return -ENODEV;
