@@ -575,7 +575,7 @@ static void vmbus_chan_release(struct kobject *kobj)
 	struct vmbus_channel *channel
 		= container_of(kobj, struct vmbus_channel, kobj);
 
-	kfree_rcu(channel, rcu);
+	//kfree_rcu(channel, rcu);
 #endif
 }
 

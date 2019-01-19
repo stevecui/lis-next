@@ -135,7 +135,7 @@ static void free_netvsc_device(struct netvsc_device *nvdev)
 
 		vfree(nvdev->chan_table[i].mrc.buf);
         }
-	kfree(nvdev);
+	//kfree(nvdev);
 }
 
 static void netvsc_destroy_buf(struct hv_device *device)
