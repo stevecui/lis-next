@@ -148,9 +148,13 @@ static void free_netvsc_device(struct rcu_head *head)
 		= container_of(head, struct netvsc_device, rcu);
 	int i;
 
-	for (i = 0; i < VRSS_CHANNEL_MAX; i++)
+	for (i = 0; i < VRSS_CHANNEL_MAX; i++){
+	if(steve_mtu == 1200||steve_mtu==1400||steve_mtu==2000)
+                {    printk("i:%d,mrc.buf:%x,nvdev:%x\n",i,(unsigned int)(uintptr_t)(nvdev->chan_table[i].mrc.buf),(unsigned int)(uintptr_t)nvdev);
+				     
+                	}
 		vfree(nvdev->chan_table[i].mrc.buf);
-
+}
 	kfree(nvdev);
 }
 
