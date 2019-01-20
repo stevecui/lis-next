@@ -1406,7 +1406,7 @@ static int netvsc_receive(struct net_device *ndev,
 		if (unlikely(ret != NVSP_STAT_SUCCESS))
 			status = NVSP_STAT_FAIL;
 	}
-    printk("netvsc_rx:q_idx:%d\n",q_idx);
+    //printk("netvsc_rx:q_idx:%d\n",q_idx);
 	if (net_device->chan_table[q_idx].mrc.buf) {
 		struct recv_comp_data *rcd;
 
