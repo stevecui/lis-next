@@ -261,7 +261,7 @@ static u16 netvsc_pick_tx(struct net_device *ndev, struct sk_buff *skb)
 	u16 q_idx = 0;
 #ifdef IDX_DEBUG
     printk("net_select_que:q_idx:%d\n",q_idx);
-#ifdef IDX_DEBUG
+#endif
 	if (ndev->real_num_tx_queues <= 1)
 		return 0;
 
