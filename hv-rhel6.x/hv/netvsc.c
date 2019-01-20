@@ -120,6 +120,7 @@ static struct netvsc_device *alloc_net_device(void)
 	return net_device;
 }
 
+#if 0
 static void free_netvsc_device(struct netvsc_device *nvdev)
 {
 	int i;
@@ -138,6 +139,19 @@ static void free_netvsc_device(struct netvsc_device *nvdev)
 		vfree(nvdev->chan_table[i].mrc.buf);
         }
 	//kfree(nvdev);
+}
+#endif
+
+static void free_netvsc_device(struct rcu_head *head)
+{
+	struct netvsc_device *nvdev
+		= container_of(head, struct netvsc_device, rcu);
+	int i;
+
+	for (i = 0; i < VRSS_CHANNEL_MAX; i++)
+		vfree(nvdev->chan_table[i].mrc.buf);
+
+	kfree(nvdev);
 }
 
 static void netvsc_destroy_buf(struct hv_device *device)
