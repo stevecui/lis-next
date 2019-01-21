@@ -823,11 +823,11 @@ void netvsc_device_remove(struct hv_device *device)
 		netvsc_teardown_send_gpadl(device, net_device, ndev);
 
 	RCU_INIT_POINTER(net_device_ctx->nvdev, NULL);
-
+#if 0
 	/* And disassociate NAPI context from device */
 	for (i = 0; i < net_device->num_chn; i++)
 		netif_napi_del(&net_device->chan_table[i].napi);
-
+#endif
 	/*
 	 * At this point, no one should be accessing net_device
 	 * except in here
@@ -836,6 +836,9 @@ void netvsc_device_remove(struct hv_device *device)
 
 	/* Now, we can close the channel safely */
 	vmbus_close(device->channel);
+	/* And disassociate NAPI context from device */
+	for (i = 0; i < net_device->num_chn; i++)
+		netif_napi_del(&net_device->chan_table[i].napi);
 
 	/*
 	 * If host is Win2016 or higher then we do the GPADL tear down
